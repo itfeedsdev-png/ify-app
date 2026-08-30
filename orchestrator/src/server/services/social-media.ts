@@ -208,11 +208,62 @@ export async function postToSocial(args: {
     });
   }
 
-  const toolSlug =
-    args.platform === "linkedin"
-      ? "LINKEDIN_CREATE_TEXT_POST"
-      : "INSTAGRAM_CREATE_TEXT_POST";
+  // v3.1 correct slugs: LINKEDIN_CREATE_LINKED_IN_POST, INSTAGRAM via media container
+  if (args.platform === "linkedin") {
+    try {
+      const userId = await resolveComposioUserId(connection.accountId);
+      // Fetch author URN first
+      const me = await composioFetch<{ data?: { id?: string } }>(
+        `/tools/execute/LINKEDIN_GET_MY_INFO`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            connected_account_id: connection.accountId,
+            user_id: userId,
+            arguments: {},
+          }),
+        },
+      );
+      const personId = (me.data as unknown as { id?: string })?.id ?? "me";
+      const author = personId.startsWith("urn:li:")
+        ? personId
+        : `urn:li:person:${personId}`;
+      const result = await composioFetch<{
+        data?: { x_restli_id?: string; postUrl?: string };
+      }>(`/tools/execute/LINKEDIN_CREATE_LINKED_IN_POST`, {
+        method: "POST",
+        body: JSON.stringify({
+          connected_account_id: connection.accountId,
+          user_id: userId,
+          arguments: { author, commentary: args.content },
+        }),
+      });
+      const postId = result.data?.x_restli_id ?? result.data?.postUrl;
+      logger.info("Social post published", {
+        requestId: getRequestId(),
+        accountId: connection.accountId,
+        platform: args.platform,
+      });
+      return {
+        posted: true,
+        postUrl: postId
+          ? `https://www.linkedin.com/feed/update/${postId}`
+          : undefined,
+      };
+    } catch (error) {
+      logger.error("Social post failed", {
+        requestId: getRequestId(),
+        platform: args.platform,
+        error: sanitizeUnknown(error),
+      });
+      throw serviceUnavailable(
+        `Failed to post to ${args.platform}. Please check your connection and try again.`,
+      );
+    }
+  }
 
+  // Instagram fallback (deprecated text post - may need media container flow)
+  const toolSlug = "INSTAGRAM_CREATE_TEXT_POST";
   try {
     const userId = await resolveComposioUserId(connection.accountId);
     const result = await composioFetch<{

@@ -28,6 +28,7 @@ import { JobPage } from "./pages/JobPage";
 import { OfflinePage } from "./pages/OfflinePage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { OrchestratorPage } from "./pages/OrchestratorPage";
+import { PostPage } from "./pages/PostPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { SignInPage } from "./pages/SignInPage";
 import { TracerLinksPage } from "./pages/TracerLinksPage";
@@ -196,6 +197,7 @@ export const App: React.FC = () => {
                 <Route path="/offline" element={<OfflinePage />} />
                 <Route path="/sign-in" element={<SignInPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/post" element={<PostPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
                 <Route path="/tracer-links" element={<TracerLinksPage />} />
                 <Route path="/visa-sponsors" element={<VisaSponsorsPage />} />

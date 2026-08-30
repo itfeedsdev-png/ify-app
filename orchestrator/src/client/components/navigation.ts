@@ -5,6 +5,7 @@ import {
   Home,
   Inbox,
   LayoutDashboard,
+  PenLine,
   Settings,
 } from "lucide-react";
 
@@ -41,6 +42,7 @@ export const NAV_LINKS: NavLink[] = [
     activePaths: ["/design-resume"],
   },
   { to: "/tracking-inbox", label: "Tracking Inbox", icon: Inbox },
+  { to: "/post", label: "Post", icon: PenLine, activePaths: ["/post"] },
   {
     to: "/analytics",
     label: "Analytics",

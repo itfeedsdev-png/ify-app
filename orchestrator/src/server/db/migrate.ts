@@ -1155,31 +1155,66 @@ const migrations = [
 
   // Backfill: Mark closed applications from latest stage event.
   `UPDATE jobs
-   SET
-     status = 'in_progress',
-     closed_at = (
-       SELECT se.occurred_at
-       FROM stage_events se
-       WHERE se.application_id = jobs.id
-       ORDER BY se.occurred_at DESC, se.id DESC
-       LIMIT 1
-     ),
-     outcome = COALESCE((
-       SELECT se.outcome
-       FROM stage_events se
-       WHERE se.application_id = jobs.id
-       ORDER BY se.occurred_at DESC, se.id DESC
-       LIMIT 1
-     ), outcome),
-     updated_at = datetime('now')
-   WHERE status IN ('applied', 'in_progress')
-     AND COALESCE((
-       SELECT se.to_stage
-       FROM stage_events se
-       WHERE se.application_id = jobs.id
-       ORDER BY se.occurred_at DESC, se.id DESC
-       LIMIT 1
-     ), 'applied') = 'closed'`,
+    SET
+      status = 'in_progress',
+      closed_at = (
+        SELECT se.occurred_at
+        FROM stage_events se
+        WHERE se.application_id = jobs.id
+        ORDER BY se.occurred_at DESC, se.id DESC
+        LIMIT 1
+      ),
+      outcome = COALESCE((
+        SELECT se.outcome
+        FROM stage_events se
+        WHERE se.application_id = jobs.id
+        ORDER BY se.occurred_at DESC, se.id DESC
+        LIMIT 1
+      ), outcome),
+      updated_at = datetime('now')
+    WHERE status IN ('applied', 'in_progress')
+      AND COALESCE((
+        SELECT se.to_stage
+        FROM stage_events se
+        WHERE se.application_id = jobs.id
+        ORDER BY se.occurred_at DESC, se.id DESC
+        LIMIT 1
+      ), 'applied') = 'closed'`,
+
+  `CREATE TABLE IF NOT EXISTS post_generations (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL DEFAULT 'tenant_default',
+    user_id TEXT,
+    topic TEXT NOT NULL,
+    platforms TEXT NOT NULL,
+    tone TEXT NOT NULL,
+    custom_tone TEXT,
+    research_context TEXT NOT NULL,
+    packs TEXT NOT NULL,
+    research TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_post_generations_tenant_user_created ON post_generations(tenant_id, user_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS social_connections (
+    id TEXT PRIMARY KEY,
+    tenant_id TEXT NOT NULL DEFAULT 'tenant_default',
+    user_id TEXT NOT NULL,
+    platform TEXT NOT NULL CHECK(platform IN ('linkedin', 'instagram')),
+    account_id TEXT NOT NULL,
+    account_name TEXT,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT,
+    expires_at TEXT,
+    auto_post_enabled INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE(tenant_id, user_id, platform)
+  )`,
 ];
 
 console.log("🔧 Running database migrations...");

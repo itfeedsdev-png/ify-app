@@ -1138,3 +1138,33 @@ export const socialConnections = sqliteTable(
     ).on(table.tenantId, table.userId, table.platform),
   }),
 );
+
+export const postGenerations = sqliteTable(
+  "post_generations",
+  {
+    id: text("id").primaryKey(),
+    tenantId: text("tenant_id")
+      .notNull()
+      .references(() => tenants.id, { onDelete: "cascade" }),
+    userId: text("user_id").references(() => users.id, {
+      onDelete: "cascade",
+    }),
+    topic: text("topic").notNull(),
+    platforms: text("platforms", { mode: "json" }).notNull(),
+    tone: text("tone").notNull(),
+    customTone: text("custom_tone"),
+    researchContext: text("research_context", { mode: "json" }).notNull(),
+    packs: text("packs", { mode: "json" }).notNull(),
+    research: text("research", { mode: "json" }).notNull(),
+    createdAt: text("created_at").notNull().default(sql`(datetime('now'))`),
+    updatedAt: text("updated_at").notNull().default(sql`(datetime('now'))`),
+  },
+  (table) => ({
+    tenantUserCreatedIndex: index(
+      "idx_post_generations_tenant_user_created",
+    ).on(table.tenantId, table.userId, table.createdAt),
+  }),
+);
+
+export type PostGenerationRow = typeof postGenerations.$inferSelect;
+export type NewPostGenerationRow = typeof postGenerations.$inferInsert;

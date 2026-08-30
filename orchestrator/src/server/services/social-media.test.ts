@@ -45,6 +45,13 @@ vi.mock("@infra/request-context", async (importOriginal) => {
   };
 });
 
+vi.mock("@server/tenancy/private-scope", () => ({
+  getPrivateDataScope: vi.fn().mockReturnValue({
+    tenantId: "tenant_default",
+    userId: "test-user",
+  }),
+}));
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 describe("social-media service", () => {
@@ -135,22 +142,39 @@ describe("social-media service", () => {
   describe("getOAuthUrl", () => {
     it("returns the composio redirect URL", async () => {
       let callCount = 0;
-      globalThis.fetch = vi.fn().mockImplementation(async () => {
-        callCount++;
-        if (callCount === 1) {
+      globalThis.fetch = vi
+        .fn()
+        .mockImplementation(async (url: string, init?: RequestInit) => {
+          callCount++;
+          if (callCount === 1) {
+            // GET /auth_configs?toolkit_slug=linkedin
+            return {
+              ok: true,
+              text: async () =>
+                JSON.stringify({
+                  items: [{ id: "int-1", toolkit: { slug: "linkedin" } }],
+                }),
+              json: async () => ({
+                items: [{ id: "int-1", toolkit: { slug: "linkedin" } }],
+              }),
+            } as unknown as Response;
+          }
+          // POST /connected_accounts
+          const body = init?.body ? JSON.parse(String(init.body)) : {};
+          expect(body.auth_config?.id).toBe("int-1");
           return {
             ok: true,
-            json: async () => [{ id: "int-1", appName: "linkedin" }],
-          };
-        }
-        return {
-          ok: true,
-          json: async () => ({
-            redirectUrl: "https://composio.dev/oauth?token=xyz",
-            connectedAccountId: "conn-abc",
-          }),
-        };
-      }) as typeof fetch;
+            text: async () =>
+              JSON.stringify({
+                redirect_url: "https://composio.dev/oauth?token=xyz",
+                id: "conn-abc",
+              }),
+            json: async () => ({
+              redirect_url: "https://composio.dev/oauth?token=xyz",
+              id: "conn-abc",
+            }),
+          } as unknown as Response;
+        }) as typeof fetch;
 
       const { getOAuthUrl } = await import("@server/services/social-media");
       const result = await getOAuthUrl({
@@ -159,12 +183,16 @@ describe("social-media service", () => {
       });
 
       expect(result.url).toBe("https://composio.dev/oauth?token=xyz");
+      expect(result.connectionId).toBe("conn-abc");
     });
 
     it("throws SERVICE_UNAVAILABLE when no integration is found", async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => [],
+      globalThis.fetch = vi.fn().mockImplementation(async () => {
+        return {
+          ok: true,
+          text: async () => JSON.stringify({ items: [] }),
+          json: async () => ({ items: [] }),
+        } as unknown as Response;
       }) as typeof fetch;
 
       const { getOAuthUrl } = await import("@server/services/social-media");
@@ -180,15 +208,24 @@ describe("social-media service", () => {
   // ─── handleOAuthCallback ────────────────────────────────────────────────
   describe("handleOAuthCallback", () => {
     it("persists connection when Composio status is ACTIVE", async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          status: "ACTIVE",
-          id: "conn-123",
-          entityId: "entity-abc",
-          accountName: "alice@example.com",
-          email: null,
-        }),
+      globalThis.fetch = vi.fn().mockImplementation(async (url: string) => {
+        expect(url).toContain("/connected_accounts/conn-123");
+        return {
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              status: "ACTIVE",
+              id: "conn-123",
+              user_id: "entity-abc",
+              member_info: { email: "alice@example.com" },
+            }),
+          json: async () => ({
+            status: "ACTIVE",
+            id: "conn-123",
+            user_id: "entity-abc",
+            member_info: { email: "alice@example.com" },
+          }),
+        } as unknown as Response;
       }) as typeof fetch;
 
       const { upsertConnection } = await import(
@@ -216,12 +253,18 @@ describe("social-media service", () => {
     it("throws UPSTREAM_ERROR when status is not ACTIVE", async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
         ok: true,
+        text: async () =>
+          JSON.stringify({
+            status: "PENDING",
+            id: "conn-456",
+            user_id: "entity-def",
+          }),
         json: async () => ({
           status: "PENDING",
           id: "conn-456",
-          entityId: "entity-def",
+          user_id: "entity-def",
         }),
-      }) as typeof fetch;
+      } as unknown as Response);
 
       const { handleOAuthCallback } = await import(
         "@server/services/social-media"
