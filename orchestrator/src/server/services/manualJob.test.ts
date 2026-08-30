@@ -1,0 +1,107 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import * as settingsRepo from "../repositories/settings";
+import { inferManualJobDetails } from "./manualJob";
+
+const settingsMocks = vi.hoisted(() => ({
+  getSetting: vi.fn(),
+  getAllSettings: vi.fn().mockResolvedValue({}),
+  getEffectiveSettings: vi.fn(),
+}));
+
+vi.mock("../repositories/settings", () => settingsMocks);
+vi.mock("@server/repositories/settings", () => settingsMocks);
+vi.mock("@server/services/settings", () => ({
+  getEffectiveSettings: settingsMocks.getEffectiveSettings,
+}));
+
+function effectiveSettings(raw: Record<string, unknown>) {
+  return {
+    model: { value: raw.model ?? "gpt-4o-mini" },
+    llmProvider: { value: raw.llmProvider ?? "openrouter" },
+    llmBaseUrl: { value: raw.llmBaseUrl ?? null },
+    llmPurposeOverrides: { value: {} },
+    modelTailoring: { value: null },
+  };
+}
+
+const originalEnv = process.env;
+const originalFetch = global.fetch;
+
+describe("manual job inference", () => {
+  beforeEach(() => {
+    vi.resetAllMocks();
+    process.env = { ...originalEnv, OPENROUTER_API_KEY: "test-key" };
+    global.fetch = vi.fn();
+    vi.mocked(settingsRepo.getSetting).mockResolvedValue(null);
+    vi.mocked(settingsRepo.getAllSettings).mockResolvedValue({
+      llmProvider: "openrouter",
+      llmApiKey: "test-key",
+    });
+    settingsMocks.getEffectiveSettings.mockImplementation(async () =>
+      effectiveSettings(await settingsMocks.getAllSettings()),
+    );
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it("returns a warning when the API key is missing", async () => {
+    delete process.env.OPENROUTER_API_KEY;
+    vi.mocked(settingsRepo.getAllSettings).mockResolvedValue({});
+
+    const result = await inferManualJobDetails(
+      "<p>JD <strong>text</strong></p>",
+    );
+
+    expect(result.job).toEqual({});
+    expect(result.warning).toContain("LLM API key not set");
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("parses JSON even when wrapped in markdown fences", async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        choices: [
+          {
+            message: {
+              content:
+                'Here is the data: ```json\n{ "title": "Backend Engineer", "employer": "Acme", "salary": " 100k " }\n```',
+            },
+          },
+        ],
+      }),
+    } as any);
+
+    const result = await inferManualJobDetails("JD text");
+
+    expect(result.warning).toBeUndefined();
+    expect(result.job).toMatchObject({
+      title: "Backend Engineer",
+      employer: "Acme",
+      salary: "100k",
+    });
+    const body = JSON.parse(
+      vi.mocked(global.fetch).mock.calls[0]?.[1]?.body as string,
+    );
+    expect(body.messages[0].content).toContain("JD text");
+    expect(body.messages[0].content).not.toContain("<strong>");
+  });
+
+  it("returns a warning when the API response fails", async () => {
+    vi.mocked(global.fetch).mockResolvedValue({
+      ok: false,
+      status: 500,
+    } as any);
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    const result = await inferManualJobDetails("JD text");
+
+    expect(result.job).toEqual({});
+    expect(result.warning).toContain("AI inference failed");
+    warnSpy.mockRestore();
+  });
+});

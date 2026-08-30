@@ -1,0 +1,520 @@
+# Product Requirements Document
+# Career Coach Agent — Multi-Agent Career Coaching Platform
+
+**micro1 Frontier Engineering Challenge 2026**  
+**Version:** 1.0  
+**Date:** August 29, 2026  
+**Author:** [Your Name]
+
+---
+
+## 1. Executive Summary
+
+### 1.1 Product Vision
+Build a multi-agent AI system that delivers **personalized, evidence-based career coaching** by analyzing a candidate's real GitHub portfolio, researching current market demands, identifying specific skill gaps, and generating actionable coaching plans with personalized content.
+
+### 1.2 Problem Statement
+
+**Who has this problem?**  
+Job seekers in tech — particularly fresh graduates, career switchers, and mid-level engineers looking to advance — who struggle with generic, one-size-fits-all career advice.
+
+**What bottleneck makes it worth solving?**
+- Career advice on the internet is generic ("learn React", "build projects") without considering the individual's actual skills, location, or target role
+- Candidates waste time learning skills the market doesn't value, or miss critical gaps they didn't know existed
+- Portfolio presentation is often weak because candidates don't know what recruiters actually look for
+- Interview preparation lacks specificity — candidates practice generic questions instead of ones tailored to their actual gaps
+- Personal branding content (LinkedIn, blogs) is generic and doesn't reflect real skills or authentic journey
+
+**Why solving it matters:**  
+A well-coached candidate can reduce time-to-hire by 30-50%, apply to roles they're actually qualified for, and present a portfolio that stands out. For career switchers, targeted guidance can mean the difference between 6 months of迷茫 and a clear 12-week roadmap.
+
+### 1.3 Solution Overview
+A **5-agent orchestrated pipeline** that:
+1. **Profile Analyzer** — Extracts structured skill profile from GitHub (tools: GitHub API)
+2. **Market Researcher** — Researches current job market for target role (tools: Composio job data)
+3. **Gap Analyzer** — Cross-references profile vs market to identify specific gaps (memory-based reasoning)
+4. **Coaching Strategist** — Generates actionable plan: resume tips, portfolio actions, interview prep, learning roadmap (verification layer)
+5. **Content Generator** — Creates personalized blog, LinkedIn, and video script content (personalization verification)
+
+All agents communicate through a **shared memory hub**, enabling context carry-forward and evidence-based reasoning.
+
+---
+
+## 2. User Personas
+
+### 2.1 Primary User: Alex, Fresh Graduate
+- **Background:** CS graduate from Jakarta, 2-3 personal projects on GitHub
+- **Goal:** Land first backend engineering role at a tech company
+- **Pain points:**
+  - Doesn't know which skills are actually in demand for backend roles in SEA
+  - Portfolio has basic CRUD apps but no testing, no CI/CD
+  - Resume is a generic template
+  - Unsure what to learn next: Docker? Kubernetes? GraphQL?
+- **Success criteria:** Gets a clear, prioritized learning plan with specific actions for their actual repos
+
+### 2.2 Secondary User: Mike, Career Switcher
+- **Background:** Former accountant, self-taught Python/JS, 8 months of coding
+- **Goal:** Transition into tech as a backend engineer
+- **Pain points:**
+  - Imposter syndrome — doesn't know if his skills are "enough"
+  - Portfolio is small and beginner-focused
+  - Doesn't know how to frame his accounting background as an asset
+  - Overwhelmed by the breadth of technologies to learn
+- **Success criteria:** Honest assessment of readiness + realistic roadmap that doesn't discourage
+
+### 2.3 Tertiary User: Sarah, Mid-Level Engineer
+- **Background:** 3 years backend experience, strong Go skills, wants senior role
+- **Goal:** Advance to senior backend engineer or staff engineer
+- **Pain points:**
+  - Strong technically but weak at system design communication
+  - Portfolio shows depth but not breadth (only Go projects)
+  - Doesn't know what "senior" means in different companies
+  - LinkedIn presence is minimal
+- **Success criteria:** Identifies the specific senior-level gaps (system design, mentorship, cross-team impact) and gets content to build thought leadership
+
+---
+
+## 3. Functional Requirements
+
+### 3.1 FR-1: GitHub Profile Analysis
+**Priority:** P0  
+**Description:** The system must analyze a GitHub user's public profile and repositories to extract:
+- Programming languages used and their distribution
+- Evidence of specific skills (from topics, languages, CI/CD, testing)
+- Activity score (recent commits, consistency, documentation)
+- Portfolio strength (stars, forks, README quality, test coverage)
+- Red flags (inactive repos, no tests, no CI/CD, missing descriptions)
+- Strengths (community engagement, polyglot ability, consistent activity)
+
+**Acceptance Criteria:**
+- [ ] Accepts GitHub username as input
+- [ ] Works with real GitHub API when token is provided
+- [ ] Falls back to mock data for demonstration without token
+- [ ] Returns structured JSON with all fields defined in `ProfileAnalysisResult`
+- [ ] LLM enriches raw data with nuanced summary and hidden patterns
+
+### 3.2 FR-2: Market Research
+**Priority:** P0  
+**Description:** The system must research the current job market for a given role and location:
+- Top in-demand skills with frequency and required experience level
+- Salary range (min, max, median)
+- Market trends (rising, stable, declining)
+- Common job titles and top hiring companies
+- Strategic insights (what makes candidates stand out, common mistakes)
+
+**Acceptance Criteria:**
+- [ ] Accepts target role and optional location
+- [ ] Works with Composio API when key is provided
+- [ ] Falls back to curated mock data for demonstration
+- [ ] Returns structured JSON with all fields defined in `MarketResearchResult`
+- [ ] LLM adds strategic insights beyond raw data
+
+### 3.3 FR-3: Gap Analysis
+**Priority:** P0  
+**Description:** The system must compare the candidate's profile against market requirements to identify:
+- Critical skill gaps (must-have skills missing from profile)
+- Significant skill gaps (nice-to-have skills missing)
+- Portfolio gaps (testing, CI/CD, documentation, community engagement)
+- Experience gap (account age vs role expectation)
+- Overall readiness score (0-100)
+- Top 5 priorities
+
+**Acceptance Criteria:**
+- [ ] Reads profile and market data from shared memory (no external tools)
+- [ ] Rule-based detection for objective gaps
+- [ ] LLM-based detection for nuanced gaps (soft skills, depth vs breadth)
+- [ ] Deduplicates and merges rule-based + LLM gaps
+- [ ] Every gap includes evidence and required action
+- [ ] Returns structured JSON with all fields defined in `GapAnalysisResult`
+
+### 3.4 FR-4: Coaching Strategy Generation
+**Priority:** P0  
+**Description:** The system must generate a comprehensive, actionable coaching plan:
+- Resume tips (specific section, issue, suggestion, example, priority)
+- Portfolio actions (specific action, description, expected impact, effort, timeline)
+- Interview preparation (category, question, why it matters, answer structure)
+- Learning resources (skill, type, title, description, estimated time)
+- Learning roadmap (phased plan with milestones)
+- Quick wins (3-5 immediate actions for this week)
+
+**Acceptance Criteria:**
+- [ ] Every recommendation is grounded in evidence from prior agents
+- [ ] Self-verification layer checks that tips connect to red flags/strengths
+- [ ] Learning resources cover critical gaps
+- [ ] Roadmap is realistic for the user's experience level
+- [ ] Returns structured JSON with all fields defined in `CoachingStrategyResult`
+
+### 3.5 FR-5: Content Generation
+**Priority:** P1  
+**Description:** The system must generate personalized content for personal branding:
+- Blog post (400-500 words, specific to user's situation)
+- LinkedIn post (150-200 words, authentic tone)
+- Video script (2-minute, with timestamps and visual cues)
+
+**Acceptance Criteria:**
+- [ ] Content mentions actual skills from the user's profile
+- [ ] Content references actual repositories and learning plan
+- [ ] Personalization score tracked and reported
+- [ ] Factual accuracy verification (doesn't claim expertise in skills being learned)
+- [ ] Returns structured JSON with all fields defined in `ContentGenerationResult`
+
+### 3.6 FR-6: Baseline Comparison
+**Priority:** P0  
+**Description:** The system must include a baseline solution for fair comparison:
+- Single prompt to LLM with target role and experience level
+- No external data, no personalization, no structured output
+- Used to measure improvement of the agent solution
+
+**Acceptance Criteria:**
+- [ ] Baseline runs independently with same inputs
+- [ ] Baseline output is generic text advice
+- [ ] Evaluation framework compares baseline vs agent on same metrics
+
+### 3.7 FR-7: Evaluation Framework
+**Priority:** P0  
+**Description:** The system must include automated evaluation:
+- 10+ test cases covering different personas and difficulty levels
+- Metrics: Personalization, Gap Detection, Actionability, Coverage, Factual Accuracy, Evidence Grounding, Readiness Assessment
+- Each metric compares baseline vs agent with improvement percentage
+- Overall pass/fail threshold: 60/100
+
+**Acceptance Criteria:**
+- [ ] Minimum 5 test cases (expandable to 10+)
+- [ ] Each test case defines expected skills and expected gaps
+- [ ] Evaluation runs baseline and agent on same case
+- [ ] Produces structured report with scores and improvement percentages
+
+---
+
+## 4. Non-Functional Requirements
+
+### 4.1 Performance
+- **NFR-1:** Agent solution must complete in under 30 seconds for a single user
+- **NFR-2:** Baseline must complete in under 10 seconds
+- **NFR-3:** Evaluation of 5 test cases must complete in under 5 minutes
+
+### 4.2 Reproducibility
+- **NFR-4:** A second person must be able to clone the repo, run `npm install`, set `.env`, and get identical results
+- **NFR-5:** All external dependencies (API keys) must be optional with mock fallbacks
+- **NFR-6:** Exact commands for baseline, agent, and evaluation must be documented
+
+### 4.3 Code Quality
+- **NFR-7:** TypeScript with strict mode enabled
+- **NFR-8:** All data structures typed via Zod-compatible interfaces
+- **NFR-9:** Agents are modular and independently testable
+- **NFR-10:** No hardcoded secrets or credentials in source code
+
+### 4.4 Scalability (Future)
+- **NFR-11:** Architecture supports adding new agents without modifying existing ones
+- **NFR-12:** Memory store supports multiple concurrent sessions
+
+---
+
+## 5. Architecture & Design
+
+### 5.1 System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        CLI / API Entry                          │
+│                   (orchestrator.ts)                             │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                     Shared Memory Store                         │
+│              (tools/memory.ts — JSON persistence)               │
+│  • profile.raw / profile.enriched                              │
+│  • market.raw / market.enriched                                │
+│  • gap.analysis                                                │
+│  • coaching.strategy                                           │
+│  • content.generated                                           │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+        ┌─────────────────────┼─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│ Agent 1       │   │ Agent 2       │   │ Agent 3       │
+│ Profile       │   │ Market        │   │ Gap           │
+│ Analyzer      │   │ Researcher    │   │ Analyzer      │
+│               │   │               │   │               │
+│ Tools:        │   │ Tools:        │   │ Tools:        │
+│ • GitHub API  │   │ • Composio    │   │ • Memory      │
+│ • LLM enrich  │   │ • LLM enrich  │   │ • LLM reason  │
+└───────────────┘   └───────────────┘   └───────────────┘
+        │                     │                     │
+        └─────────────────────┼─────────────────────┘
+                              │
+                              ▼
+        ┌─────────────────────┴─────────────────────┐
+        │                     │                     │
+        ▼                     ▼                     ▼
+┌───────────────┐   ┌───────────────┐   ┌───────────────┐
+│ Agent 4       │   │ Agent 5       │   │ Baseline      │
+│ Coaching      │   │ Content       │   │ Single-Prompt │
+│ Strategist    │   │ Generator     │   │               │
+│               │   │               │   │ No tools      │
+│ Tools:        │   │ Tools:        │   │ No memory     │
+│ • Memory      │   │ • Memory      │   │ No verify     │
+│ • LLM plan    │   │ • LLM create  │   │ Generic text  │
+│ • Self-verify │   │ • Self-verify │   │               │
+└───────────────┘   └───────────────┘   └───────────────┘
+```
+
+### 5.2 Agent Design Rationale
+
+Each agent is designed with **purposeful capabilities**:
+
+| Agent | Primary Capability | Why This Capability |
+|-------|-------------------|---------------------|
+| Profile Analyzer | **Tools** | Needs to call GitHub API to get real data. LLM alone cannot know a user's actual repos. |
+| Market Researcher | **Tools** | Needs to call external job market APIs. LLM training data is stale for current trends. |
+| Gap Analyzer | **Memory** | Does not call external tools. Reads structured data from memory and performs cross-reference reasoning. Demonstrates context carry-forward. |
+| Coaching Strategist | **Verification** | Generates creative plans but self-checks that every recommendation connects to prior evidence. Prevents hallucinated advice. |
+| Content Generator | **Orchestration + Verification** | Produces multiple output formats from a single strategy. Verifies that content doesn't misrepresent the user's skills. |
+
+### 5.3 Data Flow
+
+```
+Input: { githubUsername, targetRole, experienceLevel, location? }
+  │
+  ▼
+[Agent 1: Profile Analyzer]
+  ├─→ Calls GitHub API (or mock)
+  ├─→ Extracts: skills, repos, activity, red flags, strengths
+  └─→ Writes to memory: profile.raw, profile.enriched
+  │
+  ▼
+[Agent 2: Market Researcher]
+  ├─→ Calls Composio (or mock)
+  ├─→ Extracts: top skills, salary, trends, companies
+  └─→ Writes to memory: market.raw, market.enriched
+  │
+  ▼
+[Agent 3: Gap Analyzer]
+  ├─→ Reads: profile.enriched + market.enriched (from memory)
+  ├─→ Rule-based: matches profile skills vs market requirements
+  ├─→ LLM-based: nuanced gap detection (depth, presentation, soft skills)
+  ├─→ Merges and deduplicates gaps
+  └─→ Writes to memory: gap.analysis
+  │
+  ▼
+[Agent 4: Coaching Strategist]
+  ├─→ Reads: profile + market + gap (from memory)
+  ├─→ LLM generates: resume tips, portfolio actions, interview prep, roadmap
+  ├─→ Self-verification: checks evidence grounding
+  └─→ Writes to memory: coaching.strategy
+  │
+  ▼
+[Agent 5: Content Generator]
+  ├─→ Reads: profile + strategy (from memory)
+  ├─→ LLM generates: blog, LinkedIn, video script
+  ├─→ Verification: personalization score, factual accuracy
+  └─→ Writes to memory: content.generated
+  │
+  ▼
+Output: { profileAnalysis, marketResearch, gapAnalysis, coachingStrategy, generatedContent, traces }
+```
+
+### 5.4 Error Handling & Resilience
+
+- **Agent failure:** If an agent fails, the orchestrator logs the error and stops. No partial outputs.
+- **API fallback:** GitHub and Composio tools fall back to mock data if API keys are missing or calls fail.
+- **LLM parsing failure:** If LLM returns invalid JSON, the agent logs the error and returns the raw structured data without enrichment.
+- **Memory corruption:** If memory file is corrupted, the store starts fresh for the session.
+
+---
+
+## 6. Interface Specifications
+
+### 6.1 CLI Interface
+
+```bash
+# Agent solution
+npm start -- <github-username> <target-role> [options]
+  --level <level>       fresh-grad | junior | mid-level | senior | career-switcher
+  --location <loc>      Location preference
+  --industry <ind>      Industry preference
+  --output <file>       Save JSON output to file
+
+# Baseline
+npm run baseline -- <target-role> [options]
+  --level <level>
+  --location <loc>
+
+# Evaluation
+npm run evaluate
+```
+
+### 6.2 Type Definitions
+
+See `src/types/index.ts` for complete TypeScript interfaces. Key types:
+
+- `CareerCoachInput` — User input
+- `ProfileAnalysisResult` — Agent 1 output
+- `MarketResearchResult` — Agent 2 output
+- `GapAnalysisResult` — Agent 3 output
+- `CoachingStrategyResult` — Agent 4 output
+- `ContentGenerationResult` — Agent 5 output
+- `CareerCoachOutput` — Final orchestrated output
+- `AgentTrace` — Execution trace for each agent
+
+### 6.3 Memory Store API
+
+```typescript
+class MemoryStore {
+  set<T>(key: string, value: T, agent: string): void;
+  get<T>(key: string): T | undefined;
+  has(key: string): boolean;
+  getHistory(): MemoryEntry[];
+  clear(): void;
+}
+```
+
+---
+
+## 7. Evaluation Criteria
+
+### 7.1 Evaluation Metrics
+
+| Metric | Description | Weight | Baseline | Agent Target |
+|--------|-------------|--------|----------|--------------|
+| **Personalization** | Content mentions actual user skills/repos | 1.0 | ~20 | >70 |
+| **Gap Detection** | Identifies expected skill/portfolio gaps | 1.0 | 0 | >70 |
+| **Actionability** | Recommendations are specific with examples/timelines | 1.0 | ~15 | >75 |
+| **Coverage** | All 5 output dimensions are populated | 1.0 | ~10 | >80 |
+| **Factual Accuracy** | Doesn't claim expertise in unlearned skills | 0.8 | ~70 | >90 |
+| **Evidence Grounding** | Every recommendation connects to prior evidence | 1.0 | 0 | >80 |
+| **Readiness Assessment** | Provides quantified readiness score + improvement plan | 1.0 | 0 | >70 |
+
+### 7.2 Test Cases
+
+| ID | Persona | Role | Level | Difficulty | Expected Skills | Expected Gaps |
+|----|---------|------|-------|------------|-----------------|---------------|
+| case-1 | Fresh grad | Backend Engineer | fresh-grad | Easy | TS, Node, MongoDB | Docker, PostgreSQL, AWS, Testing |
+| case-2 | Career switcher | Backend Engineer | career-switcher | Hard | Python, JS | TS, Node, Docker, AWS, Microservices |
+| case-3 | Mid-level | Senior Backend | mid-level | Medium | Go, Python, Redis | K8s, GraphQL, System Design |
+| case-4 | Fresh grad | Frontend Engineer | fresh-grad | Medium | JS, React | TS, Next.js, Tailwind, Testing |
+| case-5 | Mid-level pivot | Data Engineer | career-switcher | Hard | Python, Go, SQL | Spark, Airflow, Kafka, Snowflake |
+
+### 7.3 Pass Criteria
+- Overall score >= 60/100 on all test cases
+- At least 3/5 test cases score >= 70/100
+- Every metric shows positive improvement over baseline
+
+---
+
+## 8. Success Metrics (User-Facing)
+
+### 8.1 Quantitative
+- **Readiness score improvement:** User's gap analysis shows clear path from current state to target
+- **Time-to-action:** User receives specific actions they can take this week (quick wins)
+- **Coverage:** User gets advice across all dimensions (profile, market, gaps, plan, content)
+
+### 8.2 Qualitative
+- **Authenticity:** Content feels written for the specific user, not a template
+- **Honesty:** Gap analysis is constructive but truthful (doesn't sugarcoat)
+- **Specificity:** Every tip includes a concrete example (e.g., "Add Jest tests to your ecommerce-api repo" not "learn testing")
+
+---
+
+## 9. Risks & Mitigations
+
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| LLM generates generic advice despite structured data | High | Medium | Self-verification layer; prompt engineering with "evidence-based" framing; strict JSON output |
+| GitHub API rate limits during evaluation | Medium | Low | Mock data fallback; rate limit handling; caching |
+| Composio API unavailable or slow | Medium | Low | Mock market data; documented fallback behavior |
+| LLM returns invalid JSON | Medium | Medium | Try-catch with fallback to raw data; regex extraction |
+| Agent pipeline too slow for demo | Medium | Low | Use gpt-4o-mini; parallelize where possible; mock data for demo |
+| Evaluation metrics are subjective | Low | Medium | Ground metrics in objective checks (skill mentions, gap coverage, evidence links) |
+
+---
+
+## 10. Timeline & Deliverables
+
+### 10.1 Development Timeline (3 Days)
+
+| Day | Focus | Deliverables |
+|-----|-------|--------------|
+| **Day 1 (Aug 28)** | Foundation | Repo setup, types, tools (GitHub, Composio, Memory), Agent 1 & 2 |
+| **Day 2 (Aug 29)** | Core Logic | Agent 3 (Gap), Agent 4 (Strategy), Agent 5 (Content), Orchestrator |
+| **Day 3 (Aug 30-31)** | Polish & Submit | Baseline, evaluation framework, test cases, README, video, trajectories |
+
+### 10.2 Final Deliverables
+
+1. **Complete solution code** — Full TypeScript project with 5 agents
+2. **Improvement changelog** — `docs/CHANGELOG.md` with iteration history
+3. **Reproduction guide** — `docs/REPRODUCTION.md` with exact commands
+4. **Solution video** — 5-minute walkthrough (problem → baseline → execution → comparison)
+5. **Agent trajectories** — Terminal logs/screenshots showing each agent's execution
+6. **This PRD** — `docs/PRD.md`
+
+---
+
+## 11. Hot Take / Insights
+
+**Main failure mode observed:**  
+LLMs tend to generate advice that *sounds* good but is not grounded in the evidence. For example, suggesting "learn Kubernetes" when the user's gap analysis shows they don't even have Docker experience yet.
+
+**How we handle it:**  
+Self-verification layers in Agent 3 and Agent 4. Every recommendation is checked against the evidence from prior agents. If a tip doesn't connect to a red flag or strength, it's flagged.
+
+**Key insight:**  
+In multi-agent systems, **the memory layer is more important than any single agent's prompt engineering.** Without structured data exchange through memory, each agent hallucinates context. The difference between a generic agent and a reliable one is not better prompts — it's better handoffs.
+
+---
+
+## 12. Appendices
+
+### 12.1 Technology Stack
+- **Language:** TypeScript 5.5+
+- **Runtime:** Node.js 18+
+- **Framework:** LangChain 0.3+ (agent orchestration)
+- **LLM:** OpenAI GPT-4o-mini (configurable)
+- **External APIs:** GitHub REST API (Octokit), Composio
+- **Module System:** ES Modules (NodeNext)
+
+### 12.2 File Structure
+```
+career-coach-agent/
+├── src/
+│   ├── types/index.ts
+│   ├── tools/
+│   │   ├── github.ts
+│   │   ├── composio.ts
+│   │   └── memory.ts
+│   ├── agents/
+│   │   ├── profileAnalyzer.ts
+│   │   ├── marketResearcher.ts
+│   │   ├── gapAnalyzer.ts
+│   │   ├── coachingStrategist.ts
+│   │   └── contentGenerator.ts
+│   └── orchestrator.ts
+├── baseline/
+│   └── single-prompt.ts
+├── tests/
+│   ├── evaluate.ts
+│   └── test-cases/
+│       ├── case-1-fresh-grad.json
+│       ├── case-2-career-switcher.json
+│       ├── case-3-mid-level.json
+│       ├── case-4-frontend-target.json
+│       └── case-5-data-engineer.json
+└── docs/
+    ├── README.md
+    ├── PRD.md
+    ├── CHANGELOG.md
+    └── REPRODUCTION.md
+```
+
+### 12.3 Mock Data Sources
+- GitHub profiles: Synthetic data for 3 personas (alex-dev, sarah-backend, mike-switcher)
+- Market data: Curated from 2026 job market trends for SEA tech roles
+- All mock data is clearly labeled and can be replaced with real API calls
+
+### 12.4 License & Attribution
+- All code is original work created during the hackathon
+- Uses open-source libraries (LangChain, Octokit, dotenv) per their licenses
+- Mock data is synthetic and does not represent real individuals

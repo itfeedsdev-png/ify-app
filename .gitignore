@@ -1,0 +1,34 @@
+# Environment files
+.env
+*.env.local
+
+# Dependencies
+node_modules/
+**/node_modules/
+**/.package-lock.json
+**/.docusaurus/
+docs-site/.docusaurus/
+docs-site/build/
+orchestrator/build/
+
+# Data directory (bind mount in Docker)
+data/
+
+# Crawlee / extractor runtime storage at repo root
+storage/
+
+# Extractor storage outputs and cached auth
+extractors/ukvisajobs/storage/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# local temp artifacts
+tmp/
+
+# Virtual environment for Python
+.venv
+
+# Runtime storage artifacts
+orchestrator/storage

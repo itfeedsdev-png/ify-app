@@ -1,0 +1,59 @@
+import { forbidden, toAppError, unauthorized } from "@infra/errors";
+import { fail, ok, okWithMeta } from "@infra/http";
+import { logger } from "@infra/logger";
+import { runWithRequestContext } from "@infra/request-context";
+import { getJobOpsAppConfig } from "@server/config/app-mode";
+import { isDemoMode } from "@server/config/demo";
+import { runPipeline } from "@server/pipeline/index";
+import { simulatePipelineRun } from "@server/services/demo-simulator";
+import { type Request, type Response, Router } from "express";
+
+export const webhookRouter = Router();
+
+/**
+ * POST /api/webhook/trigger - Webhook endpoint for n8n to trigger the pipeline
+ */
+webhookRouter.post("/trigger", async (req: Request, res: Response) => {
+  const authHeader = req.headers.authorization;
+  const expectedToken = process.env.WEBHOOK_SECRET;
+
+  if (expectedToken && authHeader !== `Bearer ${expectedToken}`) {
+    return fail(res, unauthorized());
+  }
+
+  try {
+    if (isDemoMode()) {
+      const simulated = await simulatePipelineRun();
+      return okWithMeta(
+        res,
+        {
+          message: "Pipeline trigger simulated in demo mode",
+          triggeredAt: new Date().toISOString(),
+          runId: simulated.runId,
+        },
+        { simulated: true },
+      );
+    }
+
+    if (getJobOpsAppConfig().appMode === "hosted") {
+      return fail(
+        res,
+        forbidden("Webhook pipeline trigger is unavailable in hosted mode."),
+      );
+    }
+
+    // Start pipeline in background
+    runWithRequestContext({}, () => {
+      runPipeline().catch((error) => {
+        logger.error("Webhook-triggered pipeline run failed", error);
+      });
+    });
+
+    ok(res, {
+      message: "Pipeline triggered",
+      triggeredAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    fail(res, toAppError(error));
+  }
+});
