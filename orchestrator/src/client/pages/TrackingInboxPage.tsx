@@ -1,3 +1,7 @@
+import {
+  completeSocialOAuth,
+  startSocialOAuth,
+} from "@client/api/social-media";
 import type {
   JobListItem,
   PostApplicationInboxItem,
@@ -94,6 +98,8 @@ export const TrackingInboxPage: React.FC = () => {
   const [selectedRun, setSelectedRun] = useState<PostApplicationSyncRun | null>(
     null,
   );
+  const [_gmailConnecting, setGmailConnecting] = useState(false);
+  const [gmailCallbackHandled, setGmailCallbackHandled] = useState(false);
 
   const [appliedJobByMessageId, setAppliedJobByMessageId] = useState<
     Record<string, string>
@@ -115,6 +121,41 @@ export const TrackingInboxPage: React.FC = () => {
       api.getPostApplicationRuns({ provider, accountKey, limit: 20 }),
     enabled: Boolean(provider && accountKey),
   });
+
+  /**
+   * Handle Composio OAuth callback for Gmail tracking inbox.
+   */
+  useEffect(() => {
+    if (gmailCallbackHandled) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const platform = params.get("platform");
+    const connectionId =
+      params.get("connectionId") ??
+      params.get("connectedAccountId") ??
+      params.get("connected_account_id");
+
+    if (platform !== "gmail" || !connectionId || connectionId === "undefined")
+      return;
+
+    setGmailCallbackHandled(true);
+
+    const cleanUrl = window.location.pathname;
+    window.history.replaceState(null, "", cleanUrl);
+
+    setGmailConnecting(true);
+    completeSocialOAuth({ platform: "gmail", connectionId })
+      .then(() => {
+        toast.success("Gmail connected via Composio!");
+        void statusQuery.refetch();
+      })
+      .catch((error) => {
+        showErrorToast(error, "Failed to complete Gmail OAuth connection");
+      })
+      .finally(() => {
+        setGmailConnecting(false);
+      });
+  }, [gmailCallbackHandled, statusQuery]);
 
   const status = statusQuery.data?.status ?? null;
   const inbox = inboxQuery.data?.items ?? EMPTY_INBOX_ITEMS;
@@ -224,7 +265,7 @@ export const TrackingInboxPage: React.FC = () => {
     });
   }, [appliedJobs, inbox, selectedRunItems]);
 
-  const waitForGmailOauthResult = useCallback(
+  const _waitForGmailOauthResult = useCallback(
     (
       expectedState: string,
       popup: Window,
@@ -294,59 +335,32 @@ export const TrackingInboxPage: React.FC = () => {
             provider,
             account_key_is_default: isDefaultAccountKey,
           });
-          if (provider !== "gmail") {
-            trackProductEvent("tracking_inbox_connect_completed", {
-              provider,
-              result: "error",
-            });
-            toast.error(
-              `${provider} connect is not implemented yet. Use Gmail for now.`,
-            );
+          if (provider === "gmail") {
+            setGmailConnecting(true);
+            try {
+              const redirectUri = `${window.location.origin}/tracking-inbox?platform=gmail`;
+              const { url, connectionId } = await startSocialOAuth({
+                platform: "gmail",
+                redirectUri,
+              });
+              if (!url) {
+                toast.success("Gmail is already connected");
+                void statusQuery.refetch();
+                return;
+              }
+              sessionStorage.setItem("social-oauth-gmail", connectionId);
+              window.location.href = url;
+            } catch (error) {
+              showErrorToast(error, "Failed to start Gmail connection");
+            } finally {
+              setGmailConnecting(false);
+            }
             return;
           }
 
-          const oauthStart = await api.postApplicationGmailOauthStart({
-            accountKey,
-          });
-          const popup = window.open(
-            oauthStart.authorizationUrl,
-            "gmail-oauth-connect",
-            "popup,width=520,height=720",
+          toast.error(
+            `${provider} connect is not implemented yet. Use Gmail for now.`,
           );
-          if (!popup) {
-            trackProductEvent("tracking_inbox_connect_completed", {
-              provider,
-              result: "error",
-            });
-            toast.error(
-              "Browser blocked the Gmail OAuth popup. Allow popups and retry.",
-            );
-            return;
-          }
-
-          const oauthResult = await waitForGmailOauthResult(
-            oauthStart.state,
-            popup,
-          );
-          if (oauthResult.error) {
-            throw new Error(`Gmail OAuth failed: ${oauthResult.error}`);
-          }
-          if (!oauthResult.code) {
-            throw new Error(
-              "Gmail OAuth did not return an authorization code.",
-            );
-          }
-
-          await api.postApplicationGmailOauthExchange({
-            accountKey,
-            state: oauthStart.state,
-            code: oauthResult.code,
-          });
-          trackProductEvent("tracking_inbox_connect_completed", {
-            provider,
-            result: "success",
-          });
-          toast.success("Provider connected");
         } else if (action === "sync") {
           const parsedMaxMessages = Number.parseInt(maxMessages, 10);
           const parsedSearchDays = Number.parseInt(searchDays, 10);
@@ -431,7 +445,7 @@ export const TrackingInboxPage: React.FC = () => {
       provider,
       refresh,
       searchDays,
-      waitForGmailOauthResult,
+      statusQuery,
     ],
   );
 

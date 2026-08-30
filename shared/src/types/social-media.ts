@@ -2,7 +2,7 @@
  * Shared types for social media integration.
  */
 
-export type SocialPlatform = "linkedin" | "instagram";
+export type SocialPlatform = "linkedin" | "instagram" | "gmail";
 
 export type SocialConnection = {
   platform: SocialPlatform;

@@ -38,6 +38,7 @@ const PlatformIcon: React.FC<{ platform: SocialPlatform }> = ({ platform }) => {
 const platformLabel: Record<SocialPlatform, string> = {
   linkedin: "LinkedIn",
   instagram: "Instagram",
+  gmail: "Gmail",
 };
 
 export const ShareSocialDialog: React.FC<ShareSocialDialogProps> = ({

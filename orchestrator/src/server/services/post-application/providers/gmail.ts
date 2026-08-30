@@ -81,11 +81,14 @@ function toPublicIntegration(
       hasAccessToken:
         typeof credentials.accessToken === "string" &&
         credentials.accessToken.length > 0,
+      hasComposioAccountId:
+        typeof credentials.composioAccountId === "string" &&
+        credentials.composioAccountId.length > 0,
       scope: asString(credentials.scope) ?? null,
       tokenType: asString(credentials.tokenType) ?? null,
       expiryDate: asNumber(credentials.expiryDate) ?? null,
       email: asString(credentials.email) ?? null,
-    },
+    } as Record<string, unknown>,
   };
 }
 
@@ -95,15 +98,19 @@ function buildStatus(
   message?: string,
 ): PostApplicationProviderActionResult {
   const publicIntegration = toPublicIntegration(integration);
-  const hasRefreshToken = Boolean(
-    publicIntegration?.credentials?.hasRefreshToken,
-  );
+  const creds = publicIntegration?.credentials as
+    | Record<string, unknown>
+    | undefined;
+  const hasRefreshToken = Boolean(creds?.hasRefreshToken);
+  const hasComposioAccountId = Boolean(creds?.hasComposioAccountId);
 
   return {
     status: {
       provider: "gmail",
       accountKey,
-      connected: publicIntegration?.status === "connected" && hasRefreshToken,
+      connected:
+        publicIntegration?.status === "connected" &&
+        (hasRefreshToken || hasComposioAccountId),
       integration: publicIntegration,
     },
     message,

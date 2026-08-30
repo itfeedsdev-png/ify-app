@@ -4,6 +4,7 @@ import type {
   SocialGenerateResponse,
   SocialOAuthStartRequest,
   SocialOAuthStartResponse,
+  SocialPlatform,
   SocialPostRequest,
 } from "@shared/types";
 import { fetchApi } from "./client";
@@ -22,7 +23,7 @@ export async function startSocialOAuth(
 }
 
 export async function completeSocialOAuth(body: {
-  platform: "linkedin" | "instagram";
+  platform: SocialPlatform;
   connectionId: string;
 }): Promise<{ connected: boolean }> {
   return fetchApi<{ connected: boolean }>("/social/oauth/callback", {

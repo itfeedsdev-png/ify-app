@@ -3,13 +3,7 @@
  */
 
 import { logout } from "@client/api";
-import {
-  ExternalLink,
-  LogOut,
-  type LucideIcon,
-  Menu,
-  UserRound,
-} from "lucide-react";
+import { LogOut, type LucideIcon, Menu, UserRound } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -32,14 +26,12 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { useVersionCheck } from "../hooks/useVersionCheck";
 import {
   loadRememberedAuthUsers,
   type RememberedAuthUser,
 } from "../lib/remembered-auth-users";
 import { isNavActive, NAV_LINKS } from "./navigation";
 import { StatusBadgeIndicator } from "./StatusIndicator";
-import { Tip } from "./Tip";
 
 const buildSignInPath = (username: string, nextPath: string): string => {
   const params = new URLSearchParams();
@@ -65,7 +57,6 @@ interface PageHeaderProps {
   badge?: string;
   statusIndicator?: React.ReactNode;
   actions?: React.ReactNode;
-  showVersionFooter?: boolean;
   navOpen?: boolean;
   onNavOpenChange?: (open: boolean) => void;
 }
@@ -77,7 +68,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   badge,
   statusIndicator,
   actions,
-  showVersionFooter = true,
   navOpen: controlledNavOpen,
   onNavOpenChange,
 }) => {
@@ -89,7 +79,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   );
   const navOpen = controlledNavOpen ?? internalNavOpen;
   const setNavOpen = onNavOpenChange ?? setInternalNavOpen;
-  const { version, updateAvailable } = useVersionCheck();
 
   useEffect(() => {
     if (navOpen) {
@@ -207,23 +196,6 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                {showVersionFooter && (
-                  <div className="flex flex-col items-start gap-2">
-                    <a
-                      href="https://github.com/DaKheera47/job-ops/releases"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                    >
-                      <span className="truncate">Version {version}</span>
-                      {updateAvailable && (
-                        <Tip asChild content={<p>Update available</p>}>
-                          <span className="h-2 w-2 shrink-0 cursor-pointer rounded-full bg-emerald-500" />
-                        </Tip>
-                      )}
-                    </a>
-                  </div>
-                )}
               </div>
             </SheetContent>
           </Sheet>

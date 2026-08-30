@@ -18,7 +18,7 @@ import { z } from "zod";
 
 export const socialRouter = Router();
 
-const platformSchema = z.enum(["linkedin", "instagram"]);
+const platformSchema = z.enum(["linkedin", "instagram", "gmail"]);
 
 socialRouter.get(
   "/connections",

@@ -7,6 +7,7 @@ import { AppError, serviceUnavailable } from "@infra/errors";
 import { logger } from "@infra/logger";
 import { getRequestId } from "@infra/request-context";
 import { sanitizeUnknown } from "@infra/sanitize";
+import { upsertConnectedPostApplicationIntegration } from "@server/repositories/post-application-integrations";
 import {
   deleteConnection,
   getConnection,
@@ -15,10 +16,23 @@ import {
   upsertConnection,
 } from "@server/repositories/social-connections";
 import { LlmService } from "@server/services/llm/service";
+import { getPrivateDataScope } from "@server/tenancy/private-scope";
 import { getDefaultModelForProvider } from "@shared/settings-registry";
 import type { Job } from "@shared/types";
 
 const COMPOSIO_BASE_URL = "https://backend.composio.dev/api/v3.1";
+
+function getComposioUserId(): string {
+  try {
+    const scope = getPrivateDataScope();
+    if (scope?.tenantId) {
+      return `ifyapp-${scope.tenantId}-${scope.userId ?? "anon"}`;
+    }
+  } catch {
+    // outside request scope
+  }
+  return "ifyapp-default-anon";
+}
 
 function getApiKey(): string | null {
   return process.env.COMPOSIO_API_KEY?.trim() || null;
@@ -100,13 +114,19 @@ export async function getConnections(): Promise<
 }
 
 export async function generateShareContent(args: {
-  platform: "linkedin" | "instagram";
+  platform: "linkedin" | "instagram" | "gmail";
   jobTitle: string;
   employer: string;
   jobUrl?: string | null;
   tone?: "excited" | "professional" | "grateful";
   includeHashtags?: boolean;
 }): Promise<{ content: string }> {
+  if (args.platform === "gmail") {
+    throw new AppError({
+      code: "INVALID_REQUEST",
+      message: "Gmail does not support share content generation.",
+    });
+  }
   const llm = new LlmService();
   const defaultModel = getDefaultModelForProvider(llm.getProvider());
   const tone = args.tone ?? "professional";
@@ -170,10 +190,16 @@ Guidelines:
 }
 
 export async function postToSocial(args: {
-  platform: "linkedin" | "instagram";
+  platform: "linkedin" | "instagram" | "gmail";
   content: string;
   imageUrl?: string | null;
 }): Promise<{ posted: boolean; postUrl?: string }> {
+  if (args.platform === "gmail") {
+    throw new AppError({
+      code: "INVALID_REQUEST",
+      message: "Gmail does not support social posting.",
+    });
+  }
   const connection = await getConnection(args.platform);
   if (!connection) {
     throw new AppError({
@@ -188,13 +214,15 @@ export async function postToSocial(args: {
       : "INSTAGRAM_CREATE_TEXT_POST";
 
   try {
+    const userId = await resolveComposioUserId(connection.accountId);
     const result = await composioFetch<{
       data?: { postUrl?: string };
     }>(`/tools/execute/${toolSlug}`, {
       method: "POST",
       body: JSON.stringify({
         connected_account_id: connection.accountId,
-        input: { text: args.content, caption: args.content },
+        user_id: userId,
+        arguments: { text: args.content, caption: args.content },
       }),
     });
 
@@ -247,8 +275,14 @@ export async function autoPostOnApplied(job: Job): Promise<void> {
 }
 
 export async function disconnectPlatform(
-  platform: "linkedin" | "instagram",
+  platform: "linkedin" | "instagram" | "gmail",
 ): Promise<void> {
+  if (platform === "gmail") {
+    throw new AppError({
+      code: "INVALID_REQUEST",
+      message: "Use post-application provider disconnect for Gmail.",
+    });
+  }
   const connection = await getConnection(platform);
   if (!connection) {
     throw new AppError({
@@ -276,14 +310,20 @@ export async function disconnectPlatform(
 }
 
 export async function updateAutoPost(
-  platform: "linkedin" | "instagram",
+  platform: "linkedin" | "instagram" | "gmail",
   enabled: boolean,
 ): Promise<void> {
+  if (platform === "gmail") {
+    throw new AppError({
+      code: "INVALID_REQUEST",
+      message: "Gmail does not support auto-post.",
+    });
+  }
   await setAutoPost(platform, enabled);
 }
 
 export async function getOAuthUrl(args: {
-  platform: "linkedin" | "instagram";
+  platform: "linkedin" | "instagram" | "gmail";
   redirectUri: string;
 }): Promise<{ url: string; connectionId: string }> {
   requireApiKey();
@@ -307,7 +347,9 @@ export async function getOAuthUrl(args: {
     authConfigId =
       args.platform === "linkedin"
         ? process.env.COMPOSIO_LINKEDIN_AUTH_CONFIG_ID?.trim()
-        : process.env.COMPOSIO_INSTAGRAM_AUTH_CONFIG_ID?.trim();
+        : args.platform === "instagram"
+          ? process.env.COMPOSIO_INSTAGRAM_AUTH_CONFIG_ID?.trim()
+          : process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID?.trim();
   }
 
   logger.info("Composio OAuth start", {
@@ -333,7 +375,7 @@ export async function getOAuthUrl(args: {
             id: authConfigId,
           },
           connection: {
-            user_id: `ifyapp-user-${Date.now()}`,
+            user_id: getComposioUserId(),
             callback_url: args.redirectUri,
           },
         }),
@@ -396,7 +438,7 @@ export async function getOAuthUrl(args: {
 }
 
 export async function handleOAuthCallback(args: {
-  platform: "linkedin" | "instagram";
+  platform: "linkedin" | "instagram" | "gmail";
   connectionId: string;
 }): Promise<void> {
   requireApiKey();
@@ -415,6 +457,19 @@ export async function handleOAuthCallback(args: {
     });
   }
 
+  if (args.platform === "gmail") {
+    await upsertConnectedPostApplicationIntegration({
+      provider: "gmail",
+      accountKey: "default",
+      displayName: connectedAccount.member_info?.email ?? "Gmail",
+      credentials: {
+        composioAccountId: connectedAccount.id,
+        email: connectedAccount.member_info?.email,
+      },
+    });
+    return;
+  }
+
   await upsertConnection({
     id: connectedAccount.id,
     platform: args.platform,
@@ -423,4 +478,49 @@ export async function handleOAuthCallback(args: {
     accessToken: "composio-managed",
     autoPostEnabled: false,
   });
+}
+
+async function resolveComposioUserId(
+  connectedAccountId: string,
+): Promise<string> {
+  try {
+    const acc = await composioFetch<{
+      user_id?: string;
+      userId?: string;
+    }>(`/connected_accounts/${connectedAccountId}`);
+    return acc.user_id ?? acc.userId ?? getComposioUserId();
+  } catch {
+    return getComposioUserId();
+  }
+}
+
+export async function executeComposioTool<T>(args: {
+  toolSlug: string;
+  connectedAccountId: string;
+  input: Record<string, unknown>;
+}): Promise<T> {
+  requireApiKey();
+  const userId = await resolveComposioUserId(args.connectedAccountId);
+
+  const result = await composioFetch<{
+    data?: T;
+    error?: string;
+    successful?: boolean;
+  }>(`/tools/execute/${args.toolSlug}`, {
+    method: "POST",
+    body: JSON.stringify({
+      connected_account_id: args.connectedAccountId,
+      user_id: userId,
+      arguments: args.input,
+    }),
+  });
+
+  if (!result.successful) {
+    throw new AppError({
+      code: "UPSTREAM_ERROR",
+      message: `Composio tool ${args.toolSlug} failed: ${result.error ?? "Unknown error"}`,
+    });
+  }
+
+  return result.data as T;
 }

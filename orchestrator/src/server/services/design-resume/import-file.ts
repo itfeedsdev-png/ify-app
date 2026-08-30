@@ -1936,7 +1936,9 @@ export async function importDesignResumeFromFile(
       sections: {},
     });
     const parsed = parseImportedResumeJson(fallbackJson);
-    const normalized = ensureImportedProjectIds(sanitizeNormalizedResume(parsed));
+    const normalized = ensureImportedProjectIds(
+      sanitizeNormalizedResume(parsed),
+    );
     const saved = await replaceCurrentDesignResumeDocument({
       importedAt: new Date().toISOString(),
       resumeJson: normalized,

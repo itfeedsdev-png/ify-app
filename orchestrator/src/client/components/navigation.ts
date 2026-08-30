@@ -1,13 +1,11 @@
 import {
+  BarChart3,
   Columns3,
-  Eye,
   FilePenLine,
   Home,
   Inbox,
   LayoutDashboard,
-  Link2,
   Settings,
-  Shield,
 } from "lucide-react";
 
 export type NavLink = {
@@ -44,14 +42,13 @@ export const NAV_LINKS: NavLink[] = [
   },
   { to: "/tracking-inbox", label: "Tracking Inbox", icon: Inbox },
   {
-    to: "/tracer-links",
-    label: "Tracer Links",
-    icon: Link2,
-    activePaths: ["/tracer-links"],
+    to: "/analytics",
+    label: "Analytics",
+    icon: BarChart3,
+    activePaths: ["/analytics", "/tracer-links", "/watchlist"],
   },
   // Visa Sponsors hidden for hackathon
   // { to: "/visa-sponsors", label: "Visa Sponsors", icon: Shield },
-  { to: "/watchlist", label: "Watchlist", icon: Eye },
   { to: "/settings", label: "Settings", icon: Settings },
 ];
 
