@@ -39,3 +39,5 @@ orchestrator/storage
 # AI tool configs
 .claude/
 .codex/
+.agents/
+.codegraph/
