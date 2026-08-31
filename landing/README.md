@@ -24,7 +24,7 @@ npm run dev
 3. Env: `VITE_APP_URL` = your app origin, e.g. `https://career-boardsbamboohr-production-5d85.up.railway.app`.
 4. Deploy.
 
-`vercel.json` sets the SPA rewrite (`/(.*)` → `/`) and injects `VITE_APP_URL` from a Vercel secret named `vite_app_url`.
+`vercel.json` sets the SPA rewrite (`/(.*)` → `/`). Set `VITE_APP_URL` directly in Vercel's Environment Variables settings.
 
 ## Notes
 

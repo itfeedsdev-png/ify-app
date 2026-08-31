@@ -3,10 +3,5 @@
   "outputDirectory": "dist",
   "framework": "vite",
   "installCommand": "npm install",
-  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
-  "build": {
-    "env": {
-      "VITE_APP_URL": "@vite_app_url"
-    }
-  }
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }]
 }
