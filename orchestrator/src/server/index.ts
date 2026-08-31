@@ -58,10 +58,10 @@ async function startServer() {
   }
 
   const app = createApp();
-  const PORT = process.env.PORT || 3001;
+  const PORT = Number(process.env.PORT) || 3001;
 
   // Start server
-  const server = app.listen(PORT, async () => {
+  const server = app.listen(PORT, "0.0.0.0", async () => {
     console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
