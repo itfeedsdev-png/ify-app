@@ -529,9 +529,7 @@ export async function handleOAuthCallback(args: {
     return;
   }
 
-  // Store the real Composio connected-account id (`ca_...`). Storing `user_id`
-  // here previously made every later tool execution fail with
-  // "Connected account ... not found".
+  // Store the connected-account id (`ca_...`), not the Composio user_id.
   const accountName =
     (await resolveConnectedAccountName(args.platform, connectedAccount.id)) ??
     connectedAccount.member_info?.email ??

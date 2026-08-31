@@ -32,3 +32,6 @@ tmp/
 
 # Runtime storage artifacts
 orchestrator/storage
+
+# opencode tool config
+.opencode/

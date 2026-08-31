@@ -860,8 +860,7 @@ function buildLlmTargets(args: {
 
   const targets: LlmTarget[] = [primaryTarget];
 
-  // Optional cross-provider fallback (e.g. SumoPod -> OpenRouter). Enabled only
-  // when both a provider and at least one model are configured.
+  // Cross-provider fallback (e.g. SumoPod -> OpenRouter)
   const fallbackProviderRaw = getOriginalEnvValue("LLM_FALLBACK_PROVIDER");
   const fallbackModels = parseModelList(
     getOriginalEnvValue("LLM_FALLBACK_PROVIDER_MODELS"),
@@ -878,9 +877,7 @@ function buildLlmTargets(args: {
     ? fallbackBaseUrlRaw?.trim() || fallbackStrategy.defaultBaseUrl
     : fallbackStrategy.defaultBaseUrl;
 
-  // Never reuse the primary LLM_API_KEY for the fallback provider: it usually
-  // belongs to a different vendor. Prefer LLM_FALLBACK_API_KEY, then the
-  // provider-specific env var (e.g. OPENROUTER_API_KEY).
+  // Don't reuse primary API key for fallback provider (different vendor).
   const fallbackApiKey =
     getOriginalEnvValue("LLM_FALLBACK_API_KEY")?.trim() ||
     (fallbackProvider === "openrouter"
