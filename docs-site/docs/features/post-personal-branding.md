@@ -16,7 +16,7 @@ How to use it
 2. Connect **LinkedIn / Instagram** in **Settings → Social** and **GitHub** via profile (or Composio when available).
 3. In **Create** tab: enter **Topic**, pick **Platforms** (LinkedIn, Instagram, GitHub), choose **Tone** (professional, storytelling, technical, casual, custom), click **Generate**.
 4. Review **Research preview** (4 agent cards with confidence + latency) and **Generated packs** (edit, copy, reset).
-5. Click **Publish** to post via Composio (`LINKEDIN_CREATE_TEXT_POST`, `INSTAGRAM_CREATE_TEXT_POST`). GitHub publish copies markdown for now.
+5. Click **Publish** to post via Composio (`LINKEDIN_CREATE_LINKED_IN_POST`, `INSTAGRAM_CREATE_POST`). GitHub publish copies markdown for now.
 6. Check **History** for tenant-scoped past generations and **Connect** for connection status.
 
 Common problems
@@ -25,7 +25,8 @@ Common problems
 - **LLM token limit** — repos truncated to 3, LinkedIn/IG to 2 items. Try a shorter topic.
 - **No generations in history** — ensure you are logged in with same tenant/user; history is tenant-scoped via `getPrivateDataScope()`.
 
-Related pages
-- [/docs/features/social-media](/docs/features/social-media)
-- [/docs/getting-started/gmail-oauth-setup](/docs/getting-started/gmail-oauth-setup)
-- [/docs/features/post-application-tracking](/docs/features/post-application-tracking)
+## Related features
+
+- LinkedIn / Instagram (Composio): see **Settings → Social** for setup
+- Gmail tracking inbox: see **Tracking Inbox** in app
+- Reactive Resume: see **Design Resume** in app

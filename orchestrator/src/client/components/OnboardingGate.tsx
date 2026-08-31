@@ -77,6 +77,20 @@ const OnboardingRedirect: React.FC<{ pathname: string }> = ({ pathname }) => {
     if (!navigator.onLine) {
       return <Navigate to="/offline" replace />;
     }
+    const status =
+      (typeof error === "object" && error !== null && "status" in error
+        ? Number((error as { status?: unknown }).status)
+        : null) ||
+      (typeof error === "object" && error !== null && "code" in error
+        ? (error as { code?: string }).code === "UNAUTHORIZED"
+          ? 401
+          : null
+        : null);
+    if (status === 401) {
+      const next = pathname === "/sign-in" ? null : pathname;
+      const query = next ? `?next=${encodeURIComponent(next)}` : "";
+      return <Navigate to={`/sign-in${query}`} replace />;
+    }
     return <Navigate to="/onboarding" replace />;
   }
 
