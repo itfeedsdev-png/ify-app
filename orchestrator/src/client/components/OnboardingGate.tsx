@@ -82,7 +82,9 @@ const OnboardingRedirect: React.FC<{ pathname: string }> = ({ pathname }) => {
         ? Number((error as { status?: unknown }).status)
         : null) ||
       (typeof error === "object" && error !== null && "code" in error
-        ? ((error as { code?: string }).code === "UNAUTHORIZED" ? 401 : null)
+        ? (error as { code?: string }).code === "UNAUTHORIZED"
+          ? 401
+          : null
         : null);
     if (status === 401) {
       const next = pathname === "/sign-in" ? null : pathname;

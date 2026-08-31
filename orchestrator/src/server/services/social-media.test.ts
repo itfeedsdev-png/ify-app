@@ -144,7 +144,7 @@ describe("social-media service", () => {
       let callCount = 0;
       globalThis.fetch = vi
         .fn()
-        .mockImplementation(async (url: string, init?: RequestInit) => {
+        .mockImplementation(async (_url: string, init?: RequestInit) => {
           callCount++;
           if (callCount === 1) {
             // GET /auth_configs?toolkit_slug=linkedin
