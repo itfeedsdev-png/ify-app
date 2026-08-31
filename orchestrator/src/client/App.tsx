@@ -25,6 +25,7 @@ import { GmailOauthCallbackPage } from "./pages/GmailOauthCallbackPage";
 import { HomePage } from "./pages/HomePage";
 import { InProgressBoardPage } from "./pages/InProgressBoardPage";
 import { JobPage } from "./pages/JobPage";
+import { LandingPage } from "./pages/LandingPage";
 import { OfflinePage } from "./pages/OfflinePage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { OrchestratorPage } from "./pages/OrchestratorPage";
@@ -38,7 +39,6 @@ import { WatchlistPage } from "./pages/WatchlistPage";
 
 /** Backwards-compatibility redirects: old URL paths -> new URL paths */
 const REDIRECTS: Array<{ from: string; to: string }> = [
-  { from: "/", to: "/sign-in" },
   { from: "/home", to: "/overview" },
   { from: "/ready", to: "/jobs/ready" },
   { from: "/ready/:jobId", to: "/jobs/ready/:jobId" },
@@ -177,6 +177,7 @@ export const App: React.FC = () => {
                 ))}
 
                 {/* Application routes */}
+                <Route path="/" element={<LandingPage />} />
                 <Route path="/overview" element={<HomePage />} />
                 <Route
                   path="/oauth/gmail/callback"
