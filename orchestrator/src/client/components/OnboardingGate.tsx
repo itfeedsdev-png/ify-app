@@ -20,6 +20,7 @@ export const OnboardingGate: React.FC = () => {
 
   useEffect(() => {
     if (
+      location.pathname === "/" ||
       location.pathname === "/onboarding" ||
       location.pathname === "/sign-in" ||
       location.pathname === "/offline"
@@ -50,6 +51,7 @@ export const OnboardingGate: React.FC = () => {
   }
 
   if (
+    location.pathname === "/" ||
     location.pathname === "/onboarding" ||
     location.pathname === "/sign-in" ||
     location.pathname === "/offline"
