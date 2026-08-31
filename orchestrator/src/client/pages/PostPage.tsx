@@ -16,6 +16,7 @@ import type {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   BadgeCheck,
+  Calendar,
   Copy,
   Github,
   Instagram,
@@ -39,6 +40,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { type Event, EventManager } from "@/components/ui/event-manager";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -138,6 +140,7 @@ export const PostPage: React.FC = () => {
   const [packs, setPacks] = useState<PostPack[] | null>(null);
   const [busy, setBusy] = useState<"research" | "generate" | null>(null);
   const [editing, setEditing] = useState<Record<string, string>>({});
+  const [scheduledEvents, setScheduledEvents] = useState<Event[]>([]);
 
   const connectionsQuery = useQuery({
     queryKey: ["social-connections"],
@@ -233,6 +236,42 @@ export const PostPage: React.FC = () => {
     }
   };
 
+  const handleSchedule = (platform: PersonalBrandPlatform) => {
+    const content =
+      editing[platform]?.trim() ||
+      packs?.find((p) => p.platform === platform)?.content ||
+      "";
+    if (!content) {
+      toast.error("Nothing to schedule");
+      return;
+    }
+    const start = new Date();
+    start.setHours(9, 0, 0, 0);
+    start.setDate(start.getDate() + 1);
+    const end = new Date(start.getTime() + 60 * 60 * 1000);
+    const platformColors: Record<PersonalBrandPlatform, string> = {
+      linkedin: "blue",
+      instagram: "pink",
+      github: "green",
+    };
+    const newEvent: Omit<Event, "id"> = {
+      title: `${PLATFORM_META[platform].label}: ${content.slice(0, 40)}...`,
+      description: content,
+      startTime: start,
+      endTime: end,
+      color: platformColors[platform],
+      category: PLATFORM_META[platform].label,
+      tags: [tone, platform],
+    };
+    setScheduledEvents((prev) => [
+      ...prev,
+      { ...newEvent, id: Math.random().toString(36).slice(2, 9) },
+    ]);
+    toast.success(
+      `Scheduled to ${PLATFORM_META[platform].label} — check Schedule tab`,
+    );
+  };
+
   return (
     <>
       <PageHeader
@@ -242,8 +281,9 @@ export const PostPage: React.FC = () => {
       />
       <PageMain>
         <Tabs defaultValue="create" className="space-y-6">
-          <TabsList className="grid w-full max-w-md grid-cols-3">
+          <TabsList className="grid w-full max-w-xl grid-cols-4">
             <TabsTrigger value="create">Create</TabsTrigger>
+            <TabsTrigger value="schedule">Schedule</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="connect">Connect</TabsTrigger>
           </TabsList>
@@ -486,6 +526,13 @@ export const PostPage: React.FC = () => {
                               </Button>
                               <Button
                                 size="sm"
+                                variant="secondary"
+                                onClick={() => handleSchedule(pack.platform)}
+                              >
+                                <Calendar className="h-3.5 w-3.5" /> Schedule
+                              </Button>
+                              <Button
+                                size="sm"
                                 variant="ghost"
                                 onClick={() => {
                                   const orig =
@@ -516,6 +563,54 @@ export const PostPage: React.FC = () => {
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="schedule" className="space-y-4">
+            <Card className="border-border/60">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-sm">
+                  <Calendar className="h-4 w-4" /> Schedule
+                </CardTitle>
+                <CardDescription>
+                  Drag to reschedule • Click to edit • Publish uses swarm packs
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <EventManager
+                  events={scheduledEvents}
+                  onEventCreate={(event) =>
+                    setScheduledEvents((prev) => [
+                      ...prev,
+                      { ...event, id: Math.random().toString(36).slice(2, 9) },
+                    ])
+                  }
+                  onEventUpdate={(id, patch) =>
+                    setScheduledEvents((prev) =>
+                      prev.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+                    )
+                  }
+                  onEventDelete={(id) =>
+                    setScheduledEvents((prev) =>
+                      prev.filter((e) => e.id !== id),
+                    )
+                  }
+                  categories={[
+                    "LinkedIn Post",
+                    "Instagram Post",
+                    "GitHub Post",
+                    "Personal Branding",
+                  ]}
+                  availableTags={[
+                    "Work",
+                    "Personal",
+                    "Important",
+                    "Urgent",
+                    "Team",
+                  ]}
+                  defaultView="month"
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="history">
