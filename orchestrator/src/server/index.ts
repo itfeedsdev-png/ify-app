@@ -6,9 +6,9 @@ import "./config/env";
 import { logger } from "@infra/logger";
 import { sanitizeUnknown } from "@infra/sanitize";
 import { createApp } from "./app";
-import { initializeExtractorRegistry } from "./extractors/registry";
 import { deleteExpiredOrRevokedAuthSessions } from "./repositories/auth-sessions";
 import * as settingsRepo from "./repositories/settings";
+import { initializeExtractorRegistry } from "./scrapes/registry";
 import { initializeActivationAnalyticsSafely } from "./services/activation-funnel";
 import {
   getBackupSettings,

@@ -100,7 +100,7 @@ Workspaces:
 - `shared/` — Shared types and utilities imported by orchestrator and extractors.
 - `docs-site/` — Docusaurus documentation site.
 - `career-boards/*` — Application adapters (BambooHR, Greenhouse, Workday).
-- `extractors/*` — Job source extractors (Gradcracker, UKVisaJobs, Adzuna, Seek, etc.).
+- `scrapes/*` — Job source extractors (Gradcracker, UKVisaJobs, Adzuna, Seek, etc.).
 
 Install from root:
 ```bash
@@ -132,11 +132,11 @@ Biome enforces alias usage over relative parent imports. Use:
 
 ## Extractor Deployment Note
 
-When adding a new extractor workspace under `extractors/`:
+When adding a new extractor workspace under `scrapes/`:
 
 - Update `docker-compose.yml` develop/watch sync entries if the extractor needs live-reload behavior in local container development.
 - Update all relevant `Dockerfile` stages so the extractor's `package*.json` files are copied before `npm install`, and the extractor directory itself is copied into build/runtime images.
-- Update deployment coverage in `orchestrator/src/server/extractors/deployment.test.ts` so Docker/compose support is asserted for the new extractor.
+- Update deployment coverage in `orchestrator/src/server/scrapes/deployment.test.ts` so Docker/compose support is asserted for the new extractor.
 - If this is missed, the source can appear in shared settings/UI but still fail at runtime as "not available at runtime" because the extractor manifest is not present inside the container.
 
 ## Validation / Verification

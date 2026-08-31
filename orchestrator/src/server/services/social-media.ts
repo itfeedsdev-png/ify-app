@@ -209,16 +209,23 @@ export async function postToSocial(args: {
   }
 
   // v3.1 correct slugs: LINKEDIN_CREATE_LINKED_IN_POST, INSTAGRAM via media container
+  const target = await resolveAccountTarget({
+    platform: args.platform,
+    storedAccountId: connection.accountId,
+    rowId: connection.id,
+  });
+
   if (args.platform === "linkedin") {
     try {
-      const userId = await resolveComposioUserId(connection.accountId);
+      const userId = target.userId;
+      const connectedAccountId = target.connectedAccountId;
       // Fetch author URN first
       const me = await composioFetch<{ data?: { id?: string } }>(
         `/tools/execute/LINKEDIN_GET_MY_INFO`,
         {
           method: "POST",
           body: JSON.stringify({
-            connected_account_id: connection.accountId,
+            connected_account_id: connectedAccountId,
             user_id: userId,
             arguments: {},
           }),
@@ -233,7 +240,7 @@ export async function postToSocial(args: {
       }>(`/tools/execute/LINKEDIN_CREATE_LINKED_IN_POST`, {
         method: "POST",
         body: JSON.stringify({
-          connected_account_id: connection.accountId,
+          connected_account_id: connectedAccountId,
           user_id: userId,
           arguments: { author, commentary: args.content },
         }),
@@ -265,13 +272,14 @@ export async function postToSocial(args: {
   // Instagram fallback (deprecated text post - may need media container flow)
   const toolSlug = "INSTAGRAM_CREATE_TEXT_POST";
   try {
-    const userId = await resolveComposioUserId(connection.accountId);
+    const userId = target.userId;
+    const connectedAccountId = target.connectedAccountId;
     const result = await composioFetch<{
       data?: { postUrl?: string };
     }>(`/tools/execute/${toolSlug}`, {
       method: "POST",
       body: JSON.stringify({
-        connected_account_id: connection.accountId,
+        connected_account_id: connectedAccountId,
         user_id: userId,
         arguments: { text: args.content, caption: args.content },
       }),
@@ -521,14 +529,126 @@ export async function handleOAuthCallback(args: {
     return;
   }
 
+  // Store the real Composio connected-account id (`ca_...`). Storing `user_id`
+  // here previously made every later tool execution fail with
+  // "Connected account ... not found".
+  const accountName =
+    (await resolveConnectedAccountName(args.platform, connectedAccount.id)) ??
+    connectedAccount.member_info?.email ??
+    null;
+
   await upsertConnection({
     id: connectedAccount.id,
     platform: args.platform,
-    accountId: connectedAccount.user_id ?? "",
-    accountName: connectedAccount.member_info?.email ?? null,
+    accountId: connectedAccount.id,
+    accountName,
     accessToken: "composio-managed",
     autoPostEnabled: false,
   });
+}
+
+/**
+ * Best-effort display name for the connected account (so the UI shows the real
+ * user instead of a generic "Connect" state.
+ */
+async function resolveConnectedAccountName(
+  platform: "linkedin" | "instagram" | "gmail",
+  connectedAccountId: string,
+): Promise<string | null> {
+  if (platform === "linkedin") {
+    try {
+      const profile = await executeComposioTool<{
+        localizedFirstName?: string;
+        localizedLastName?: string;
+        firstName?: {
+          localized?: Record<string, string>;
+          preferredLocale?: { language: string; country: string };
+        };
+        lastName?: {
+          localized?: Record<string, string>;
+          preferredLocale?: { language: string; country: string };
+        };
+        vanityName?: string;
+      }>({
+        toolSlug: "LINKEDIN_GET_MY_INFO",
+        connectedAccountId,
+        input: {},
+      });
+
+      const first =
+        profile.localizedFirstName ?? pickLocalized(profile.firstName);
+      const last = profile.localizedLastName ?? pickLocalized(profile.lastName);
+      const full = [first, last].filter(Boolean).join(" ").trim();
+      return full || profile.vanityName || null;
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function pickLocalized(value?: {
+  localized?: Record<string, string>;
+  preferredLocale?: { language: string; country: string };
+}): string | undefined {
+  if (!value?.localized) return undefined;
+  const locale = value.preferredLocale
+    ? `${value.preferredLocale.language}_${value.preferredLocale.country}`
+    : undefined;
+  if (locale && value.localized[locale]) return value.localized[locale];
+  return Object.values(value.localized)[0];
+}
+
+/**
+ * Resolve a stored account reference to a real Composio connected account.
+ *
+ * Legacy rows stored the Composio `user_id` in `accountId`. We detect that and
+ * look up the matching connected account, then repair the stored row so later
+ * calls work.
+ */
+async function resolveAccountTarget(args: {
+  platform: "linkedin" | "instagram";
+  storedAccountId: string;
+  rowId: string;
+}): Promise<{ connectedAccountId: string; userId: string }> {
+  if (args.storedAccountId.startsWith("ca_")) {
+    const userId = await resolveComposioUserId(args.storedAccountId);
+    return {
+      connectedAccountId: args.storedAccountId,
+      userId,
+    };
+  }
+
+  // Legacy value: a Composio user_id. Find the matching connected account.
+  const list = await composioFetch<{
+    items?: Array<{ id?: string; user_id?: string }>;
+  }>(`/connected_accounts?toolkit_slug=${args.platform}`);
+
+  const match = (list.items ?? []).find(
+    (entry) => entry.user_id === args.storedAccountId,
+  );
+
+  if (!match?.id) {
+    throw new AppError({
+      code: "NOT_FOUND",
+      message: `Could not resolve the connected ${args.platform} account. Reconnect it in Post → Connect.`,
+    });
+  }
+
+  // Repair the stored row so subsequent calls use the correct id.
+  await upsertConnection({
+    id: args.rowId,
+    platform: args.platform,
+    accountId: match.id,
+    accountName: await resolveConnectedAccountName(args.platform, match.id),
+    accessToken: "composio-managed",
+    autoPostEnabled: false,
+  });
+
+  return {
+    connectedAccountId: match.id,
+    userId: match.user_id ?? args.storedAccountId,
+  };
 }
 
 async function resolveComposioUserId(

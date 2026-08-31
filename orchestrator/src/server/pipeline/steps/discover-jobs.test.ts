@@ -13,7 +13,7 @@ vi.mock("@server/repositories/jobs", () => ({
   getAllJobUrls: vi.fn().mockResolvedValue([]),
 }));
 
-vi.mock("@server/extractors/registry", () => ({
+vi.mock("@server/scrapes/registry", () => ({
   getExtractorRegistry: vi.fn(),
 }));
 
@@ -50,7 +50,7 @@ describe("discoverJobsStep", () => {
 
   it("aggregates source errors for enabled sources", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -125,7 +125,7 @@ describe("discoverJobsStep", () => {
     vi.useFakeTimers();
     try {
       const settingsRepo = await import("@server/repositories/settings");
-      const registryModule = await import("@server/extractors/registry");
+      const registryModule = await import("@server/scrapes/registry");
       let hungContext: ExtractorRuntimeContext | undefined;
       const hungManifest = {
         id: "startupjobs",
@@ -193,7 +193,7 @@ describe("discoverJobsStep", () => {
 
   it("overrides persisted extractor limits with the normalized run budget", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const jobspyManifest = {
       id: "jobspy",
       displayName: "JobSpy",
@@ -231,7 +231,7 @@ describe("discoverJobsStep", () => {
 
   it("streams extractor progress detail while discovery is still running", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const gradcrackerManifest = {
       id: "gradcracker",
@@ -284,7 +284,7 @@ describe("discoverJobsStep", () => {
 
   it("throws when all enabled sources fail", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const ukvisaManifest = {
       id: "ukvisajobs",
@@ -322,7 +322,7 @@ describe("discoverJobsStep", () => {
 
   it("keeps non-fatal source errors when an extractor succeeds with no jobs", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -367,7 +367,7 @@ describe("discoverJobsStep", () => {
 
   it("throws when all requested sources are incompatible for country", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     vi.mocked(settingsRepo.getAllSettings).mockResolvedValue({
       searchTerms: JSON.stringify(["engineer"]),
@@ -394,7 +394,7 @@ describe("discoverJobsStep", () => {
 
   it("does not throw when no sources are requested", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     vi.mocked(settingsRepo.getAllSettings).mockResolvedValue({
       searchTerms: JSON.stringify(["engineer"]),
@@ -420,7 +420,7 @@ describe("discoverJobsStep", () => {
 
   it("adds watchlist jobs to normal extractor discovery for the active user", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -514,7 +514,7 @@ describe("discoverJobsStep", () => {
 
   it("does not touch watchlist discovery when no user context exists", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -544,7 +544,7 @@ describe("discoverJobsStep", () => {
 
   it("skips watchlist discovery when disabled for a retry pass", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -579,7 +579,7 @@ describe("discoverJobsStep", () => {
 
   it("keeps watchlist source failures non-fatal when extractors succeed", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -654,7 +654,7 @@ describe("discoverJobsStep", () => {
 
   it("filters watchlist sources to the requested subset (#621)", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -720,7 +720,7 @@ describe("discoverJobsStep", () => {
 
   it("drops unknown / cross-tenant watchlist source IDs without calling discovery (#621)", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -776,7 +776,7 @@ describe("discoverJobsStep", () => {
 
   it("disables watchlist discovery when explicitly passed an empty list (#621)", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
     const watchlistResults = await import("@server/watchlist/results");
     const watchlistStep = await import("./watchlist-jobs");
 
@@ -811,7 +811,7 @@ describe("discoverJobsStep", () => {
 
   it("drops discovered jobs when employer matches blocked company keywords", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -864,7 +864,7 @@ describe("discoverJobsStep", () => {
 
   it("applies shared city filtering for sources without native city filtering", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const gradcrackerManifest = {
       id: "gradcracker",
@@ -941,7 +941,7 @@ describe("discoverJobsStep", () => {
 
   it("drops discovered jobs outside the selected country when no cities are set", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -1004,7 +1004,7 @@ describe("discoverJobsStep", () => {
 
   it("keeps jobs that only expose structured location evidence", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -1062,7 +1062,7 @@ describe("discoverJobsStep", () => {
 
   it("keeps remote jobs worldwide when scope allows them", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -1125,7 +1125,7 @@ describe("discoverJobsStep", () => {
 
   it("keeps country matches when strictness is flexible and city metadata disagrees", async () => {
     const settingsRepo = await import("@server/repositories/settings");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",
@@ -1176,7 +1176,7 @@ describe("discoverJobsStep", () => {
   it("tracks source completion counters across source transitions", async () => {
     const settingsRepo = await import("@server/repositories/settings");
     const jobsRepo = await import("@server/repositories/jobs");
-    const registryModule = await import("@server/extractors/registry");
+    const registryModule = await import("@server/scrapes/registry");
 
     const jobspyManifest = {
       id: "jobspy",

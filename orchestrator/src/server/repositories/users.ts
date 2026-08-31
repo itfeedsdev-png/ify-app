@@ -404,6 +404,15 @@ export async function findOrCreateOAuthUser(input: {
     return pub;
   }
 
+  // First account on a fresh install becomes the system admin and workspace
+  // owner. This mirrors the credential-based first-admin setup, so a brand-new
+  // deployment where the owner signs in with Google/GitHub can still reach
+  // Backups, Workspace Access, and Database tools.
+  const [{ total }] = await db
+    .select({ total: sql<number>`count(*)` })
+    .from(users);
+  const isFirstUser = Number(total ?? 0) === 0;
+
   // Create new user with an unusable random password (OAuth-only account)
   const { randomBytes } = await import("node:crypto");
   const unusableHash = randomBytes(64).toString("base64url");
@@ -430,7 +439,7 @@ export async function findOrCreateOAuthUser(input: {
         displayName: input.displayName?.trim() || input.email || username,
         passwordHash: unusableHash,
         passwordSalt: unusableSalt,
-        isSystemAdmin: false,
+        isSystemAdmin: isFirstUser,
         isDisabled: false,
         createdAt: now,
         updatedAt: now,
@@ -442,7 +451,7 @@ export async function findOrCreateOAuthUser(input: {
         id: randomUUID(),
         userId,
         tenantId: DEFAULT_TENANT_ID,
-        role: "member",
+        role: isFirstUser ? "owner" : "member",
         createdAt: now,
         updatedAt: now,
       })

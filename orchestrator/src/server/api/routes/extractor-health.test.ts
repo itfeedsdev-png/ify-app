@@ -1,5 +1,5 @@
 import type { Server } from "node:http";
-import type { ExtractorRegistry } from "@server/extractors/registry";
+import type { ExtractorRegistry } from "@server/scrapes/registry";
 import type { ExtractorSourceId } from "@shared/extractors";
 import { normalizeLocationSourceCapabilities } from "@shared/location-domain.js";
 import type { ExtractorManifest } from "@shared/types";
@@ -8,7 +8,7 @@ import { startServer, stopServer } from "./test-utils";
 
 const mockGetExtractorRegistry = vi.fn();
 
-vi.mock("@server/extractors/registry", () => ({
+vi.mock("@server/scrapes/registry", () => ({
   getExtractorRegistry: mockGetExtractorRegistry,
 }));
 

@@ -2,7 +2,7 @@ import { copyFile, mkdtemp, rm } from "node:fs/promises";
 import type { Server } from "node:http";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ExtractorRegistry } from "@server/extractors/registry";
+import type { ExtractorRegistry } from "@server/scrapes/registry";
 import {
   type ExtractorSourceId,
   PIPELINE_EXTRACTOR_SOURCE_IDS,
@@ -273,7 +273,7 @@ export async function startServer(options?: {
   const { applyStoredEnvOverrides } = await import(
     "@server/services/envSettings"
   );
-  const registryModule = await import("@server/extractors/registry");
+  const registryModule = await import("@server/scrapes/registry");
   const defaultRegistry = createTestExtractorRegistry();
   if (vi.isMockFunction(registryModule.getExtractorRegistry)) {
     vi.mocked(registryModule.getExtractorRegistry).mockResolvedValue(

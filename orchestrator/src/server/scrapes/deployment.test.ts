@@ -35,9 +35,9 @@ describe("extractor deployment config", () => {
     });
 
     expect(dockerfile).toContain(
-      "COPY extractors/naukri/package*.json ./extractors/naukri/",
+      "COPY scrapes/naukri/package*.json ./scrapes/naukri/",
     );
-    expect(dockerfile).toContain("COPY extractors/naukri ./extractors/naukri");
+    expect(dockerfile).toContain("COPY scrapes/naukri ./scrapes/naukri");
   });
 
   it("ships the Jobindex extractor in Docker runtime images", async () => {
@@ -46,11 +46,9 @@ describe("extractor deployment config", () => {
     });
 
     expect(dockerfile).toContain(
-      "COPY extractors/jobindex/package*.json ./extractors/jobindex/",
+      "COPY scrapes/jobindex/package*.json ./scrapes/jobindex/",
     );
-    expect(dockerfile).toContain(
-      "COPY extractors/jobindex ./extractors/jobindex",
-    );
+    expect(dockerfile).toContain("COPY scrapes/jobindex ./scrapes/jobindex");
   });
 
   it("ships the FreeHire extractor in Docker runtime images", async () => {
@@ -59,11 +57,9 @@ describe("extractor deployment config", () => {
     });
 
     expect(dockerfile).toContain(
-      "COPY extractors/freehire/package*.json ./extractors/freehire/",
+      "COPY scrapes/freehire/package*.json ./scrapes/freehire/",
     );
-    expect(dockerfile).toContain(
-      "COPY extractors/freehire ./extractors/freehire",
-    );
+    expect(dockerfile).toContain("COPY scrapes/freehire ./scrapes/freehire");
   });
 
   it("does not install a vanilla Node Playwright Firefox binary", async () => {
@@ -102,8 +98,8 @@ describe("extractor deployment config", () => {
       { encoding: "utf8" },
     );
 
-    expect(composeFile).toContain("path: ./extractors/naukri");
-    expect(composeFile).toContain("target: /app/extractors/naukri");
+    expect(composeFile).toContain("path: ./scrapes/naukri");
+    expect(composeFile).toContain("target: /app/scrapes/naukri");
   });
 
   it("syncs the Jobindex extractor in compose development mode", async () => {
@@ -112,8 +108,8 @@ describe("extractor deployment config", () => {
       { encoding: "utf8" },
     );
 
-    expect(composeFile).toContain("path: ./extractors/jobindex/src");
-    expect(composeFile).toContain("target: /app/extractors/jobindex/src");
+    expect(composeFile).toContain("path: ./scrapes/jobindex/src");
+    expect(composeFile).toContain("target: /app/scrapes/jobindex/src");
   });
 
   it("syncs the FreeHire extractor in compose development mode", async () => {
@@ -122,8 +118,8 @@ describe("extractor deployment config", () => {
       { encoding: "utf8" },
     );
 
-    expect(composeFile).toContain("path: ./extractors/freehire/src");
-    expect(composeFile).toContain("target: /app/extractors/freehire/src");
+    expect(composeFile).toContain("path: ./scrapes/freehire/src");
+    expect(composeFile).toContain("target: /app/scrapes/freehire/src");
   });
 
   it("syncs the Workday career board package in compose development mode", async () => {

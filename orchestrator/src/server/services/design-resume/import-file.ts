@@ -33,6 +33,7 @@ import {
   ensureImportedProjectIds,
   replaceCurrentDesignResumeDocument,
 } from "./index";
+import { parseResumeTextToImportedJson } from "./parse-resume-text";
 
 type SupportedImportMediaType =
   | "application/pdf"
@@ -1922,19 +1923,14 @@ export async function importDesignResumeFromFile(
       mediaType,
       decoded,
     }).catch(() => "");
-    const textForResume =
-      parseOnlyText && parseOnlyText.trim().length > 50
-        ? parseOnlyText.trim().slice(0, 4000)
-        : `Resume imported from ${fileName} via parse-only mode (no LLM).`;
-    const fallbackJson = JSON.stringify({
-      basics: {
-        name: "Muhammad Maulana Firdaussy",
-        label: "Fullstack Developer",
-        email: "firdaussyah03@gmail.com",
-        summary: textForResume,
-      },
-      sections: {},
+    // Build a structured resume from the extracted text with local heuristics.
+    // This keeps real detail (experience, education, skills, projects, ...)
+    // instead of dumping everything into a single summary field.
+    const parsedJson = parseResumeTextToImportedJson({
+      text: parseOnlyText ?? "",
+      fileName: fileName ?? undefined,
     });
+    const fallbackJson = JSON.stringify(parsedJson);
     const parsed = parseImportedResumeJson(fallbackJson);
     const normalized = ensureImportedProjectIds(
       sanitizeNormalizedResume(parsed),

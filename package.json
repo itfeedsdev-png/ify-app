@@ -5,7 +5,7 @@
     "orchestrator",
     "docs-site",
     "career-boards/*",
-    "extractors/*",
+    "scrapes/*",
     "shared"
   ],
   "scripts": {

@@ -1,4 +1,4 @@
-import type { ExtractorRegistry } from "@server/extractors/registry";
+import type { ExtractorRegistry } from "@server/scrapes/registry";
 import type { ExtractorSourceId } from "@shared/extractors";
 import { normalizeLocationSourceCapabilities } from "@shared/location-domain.js";
 import type { ExtractorManifest } from "@shared/types";
@@ -6,7 +6,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockGetExtractorRegistry = vi.fn();
 
-vi.mock("@server/extractors/registry", () => ({
+vi.mock("@server/scrapes/registry", () => ({
   getExtractorRegistry: mockGetExtractorRegistry,
 }));
 

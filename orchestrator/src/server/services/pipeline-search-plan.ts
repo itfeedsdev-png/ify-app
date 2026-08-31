@@ -1,6 +1,6 @@
 import { logger } from "@infra/logger";
-import type { ExtractorRegistry } from "@server/extractors/registry";
-import { getExtractorRegistry } from "@server/extractors/registry";
+import type { ExtractorRegistry } from "@server/scrapes/registry";
+import { getExtractorRegistry } from "@server/scrapes/registry";
 import {
   createConfiguredLlmService,
   resolveLlmModel,

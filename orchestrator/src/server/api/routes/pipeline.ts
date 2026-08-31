@@ -14,10 +14,6 @@ import { setupSse, startSseHeartbeat, writeSseData } from "@infra/sse";
 import { getDataDir } from "@server/config/dataDir";
 import { isDemoMode } from "@server/config/demo";
 import {
-  type ExtractorRegistry,
-  getExtractorRegistry,
-} from "@server/extractors/registry";
-import {
   getPendingChallenges,
   getPipelineStatus,
   getProgress,
@@ -29,6 +25,10 @@ import {
 } from "@server/pipeline/index";
 import * as pipelineRepo from "@server/repositories/pipeline";
 import * as pipelineSearchPresetsRepo from "@server/repositories/pipeline-search-presets";
+import {
+  type ExtractorRegistry,
+  getExtractorRegistry,
+} from "@server/scrapes/registry";
 import { trackCanonicalActivationEvent } from "@server/services/activation-funnel";
 import {
   buildChallengeViewerUrl,

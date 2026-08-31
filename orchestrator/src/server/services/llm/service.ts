@@ -37,11 +37,28 @@ import {
 import { parseJsonContent } from "./utils/json";
 import { parseErrorMessage, truncate } from "./utils/string";
 
+type LlmTarget = {
+  label: string;
+  provider: LlmProvider;
+  baseUrl: string;
+  apiKey: string | null;
+  strategy: (typeof strategies)[LlmProvider];
+  /**
+   * When set, these models fully replace the requested model. Used by
+   * cross-provider fallbacks where the primary model name is not valid
+   * (e.g. falling back from SumoPod models to OpenRouter models).
+   */
+  configuredModels: string[] | null;
+  /** Extra models appended after the requested model on the primary target. */
+  additionalModels: string[];
+};
+
 export class LlmService {
   private readonly provider: LlmProvider;
   private readonly baseUrl: string;
   private readonly apiKey: string | null;
   private readonly strategy: (typeof strategies)[LlmProvider];
+  private readonly targets: LlmTarget[];
   private readonly codexClient: CodexClient;
   private readonly geminiCliClient: GeminiCliClient;
   private readonly claudeCliClient: ClaudeCliClient;
@@ -82,6 +99,12 @@ export class LlmService {
     this.baseUrl = baseUrl;
     this.apiKey = apiKey;
     this.strategy = strategy;
+    this.targets = buildLlmTargets({
+      provider: resolvedProvider,
+      baseUrl,
+      apiKey,
+      strategy,
+    });
     this.codexClient = new CodexClient();
     this.geminiCliClient = new GeminiCliClient();
     this.claudeCliClient = new ClaudeCliClient();
@@ -114,34 +137,100 @@ export class LlmService {
     } = options;
     const jobId = options.jobId;
 
-    const cacheKey = buildModeCacheKey(this.provider, this.baseUrl);
-    const modes = getOrderedModes(cacheKey, this.strategy.modes);
+    let lastResult: LlmResponse<T> = {
+      success: false,
+      error: "All provider modes failed",
+    };
 
-    for (const mode of modes) {
-      const result = await this.tryMode<T>({
-        mode,
-        model,
-        messages,
-        jsonSchema,
-        maxRetries,
-        retryDelayMs,
-        jobId,
-        signal,
+    for (
+      let targetIndex = 0;
+      targetIndex < this.targets.length;
+      targetIndex++
+    ) {
+      const target = this.targets[targetIndex];
+      const cacheKey = buildModeCacheKey(target.provider, target.baseUrl);
+      const candidateModels = resolveTargetModels({
+        target,
+        requestedModel: model,
       });
 
-      if (result.success) {
-        rememberSuccessfulMode(cacheKey, mode);
-        return result;
+      let targetFailed = false;
+
+      for (
+        let modelIndex = 0;
+        modelIndex < candidateModels.length;
+        modelIndex++
+      ) {
+        const candidateModel = candidateModels[modelIndex];
+        const modes = getOrderedModes(cacheKey, target.strategy.modes);
+        let modelFailed = false;
+
+        for (const mode of modes) {
+          const result = await this.tryMode<T>({
+            target,
+            mode,
+            model: candidateModel,
+            messages,
+            jsonSchema,
+            maxRetries,
+            retryDelayMs,
+            jobId,
+            signal,
+          });
+
+          if (result.success) {
+            rememberSuccessfulMode(cacheKey, mode);
+            return result;
+          }
+
+          if (!result.success && result.error.startsWith("CAPABILITY:")) {
+            lastResult = result;
+            continue;
+          }
+
+          lastResult = result;
+          modelFailed = true;
+          break;
+        }
+
+        const isLastModel = modelIndex === candidateModels.length - 1;
+        if (modelFailed && !isLastModel) {
+          logger.warn("LLM model failed, falling back to next model", {
+            jobId: jobId ?? "unknown",
+            target: target.label,
+            provider: target.provider,
+            failedModel: candidateModel,
+            nextModel: candidateModels[modelIndex + 1],
+            reason: lastResult.success ? null : lastResult.error,
+          });
+          continue;
+        }
+
+        if (modelFailed) {
+          targetFailed = true;
+          break;
+        }
       }
 
-      if (!result.success && result.error.startsWith("CAPABILITY:")) {
+      const isLastTarget = targetIndex === this.targets.length - 1;
+      if (targetFailed && !isLastTarget) {
+        logger.warn("LLM target failed, falling back to next provider", {
+          jobId: jobId ?? "unknown",
+          failedTarget: target.label,
+          failedProvider: target.provider,
+          nextTarget: this.targets[targetIndex + 1].label,
+          nextProvider: this.targets[targetIndex + 1].provider,
+          reason: lastResult.success ? null : lastResult.error,
+        });
         continue;
       }
 
-      return result;
+      if (targetFailed) {
+        return lastResult;
+      }
     }
 
-    return { success: false, error: "All provider modes failed" };
+    return lastResult;
   }
 
   getProvider(): LlmProvider {
@@ -400,6 +489,7 @@ export class LlmService {
   }
 
   private async tryMode<T>(args: {
+    target: LlmTarget;
     mode: ResponseMode;
     model: string;
     messages: LlmRequestOptions<T>["messages"];
@@ -410,6 +500,7 @@ export class LlmService {
     signal?: AbortSignal;
   }): Promise<LlmResponse<T>> {
     const {
+      target,
       mode,
       model: rawModel,
       messages,
@@ -419,7 +510,7 @@ export class LlmService {
       signal,
     } = args;
     const jobId = args.jobId;
-    const model = normalizeModelForProvider(this.provider, rawModel);
+    const model = normalizeModelForProvider(target.provider, rawModel);
     let lastRetryAfterMs: number | undefined;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -440,10 +531,10 @@ export class LlmService {
           await sleep(delayMs);
         }
 
-        const { url, headers, body } = this.strategy.buildRequest({
+        const { url, headers, body } = target.strategy.buildRequest({
           mode,
-          baseUrl: this.baseUrl,
-          apiKey: this.apiKey,
+          baseUrl: target.baseUrl,
+          apiKey: target.apiKey,
           model,
           messages,
           jsonSchema,
@@ -472,7 +563,7 @@ export class LlmService {
         }
 
         const data = await response.json();
-        const content = this.strategy.extractText(data);
+        const content = target.strategy.extractText(data);
 
         if (!content) {
           throw new Error(EMPTY_RESPONSE_ERROR);
@@ -487,7 +578,7 @@ export class LlmService {
         lastRetryAfterMs = (error as LlmApiError).retryAfterMs;
 
         if (
-          this.strategy.isCapabilityError({
+          target.strategy.isCapabilityError({
             mode,
             status,
             body,
@@ -721,6 +812,100 @@ function providerUsesConfiguredBaseUrl(provider: LlmProvider): boolean {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseModelList(raw: string | null | undefined): string[] {
+  return (raw ?? "")
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+}
+
+function resolveTargetModels(args: {
+  target: LlmTarget;
+  requestedModel: string;
+}): string[] {
+  const { target, requestedModel } = args;
+
+  if (target.configuredModels && target.configuredModels.length > 0) {
+    return Array.from(new Set(target.configuredModels));
+  }
+
+  const candidates = [requestedModel, ...target.additionalModels]
+    .map((entry) => entry?.trim())
+    .filter(Boolean);
+
+  return Array.from(new Set(candidates));
+}
+
+function buildLlmTargets(args: {
+  provider: LlmProvider;
+  baseUrl: string;
+  apiKey: string | null;
+  strategy: (typeof strategies)[LlmProvider];
+}): LlmTarget[] {
+  const { provider, baseUrl, apiKey, strategy } = args;
+
+  const primaryTarget: LlmTarget = {
+    label: "primary",
+    provider,
+    baseUrl,
+    apiKey,
+    strategy,
+    configuredModels: null,
+    additionalModels: parseModelList(
+      getOriginalEnvValue("LLM_FALLBACK_MODELS"),
+    ),
+  };
+
+  const targets: LlmTarget[] = [primaryTarget];
+
+  // Optional cross-provider fallback (e.g. SumoPod -> OpenRouter). Enabled only
+  // when both a provider and at least one model are configured.
+  const fallbackProviderRaw = getOriginalEnvValue("LLM_FALLBACK_PROVIDER");
+  const fallbackModels = parseModelList(
+    getOriginalEnvValue("LLM_FALLBACK_PROVIDER_MODELS"),
+  );
+
+  if (!fallbackProviderRaw || fallbackModels.length === 0) {
+    return targets;
+  }
+
+  const fallbackProvider = normalizeProvider(fallbackProviderRaw, null);
+  const fallbackStrategy = strategies[fallbackProvider];
+  const fallbackBaseUrlRaw = getOriginalEnvValue("LLM_FALLBACK_BASE_URL");
+  const fallbackBaseUrl = providerUsesConfiguredBaseUrl(fallbackProvider)
+    ? fallbackBaseUrlRaw?.trim() || fallbackStrategy.defaultBaseUrl
+    : fallbackStrategy.defaultBaseUrl;
+
+  // Never reuse the primary LLM_API_KEY for the fallback provider: it usually
+  // belongs to a different vendor. Prefer LLM_FALLBACK_API_KEY, then the
+  // provider-specific env var (e.g. OPENROUTER_API_KEY).
+  const fallbackApiKey =
+    getOriginalEnvValue("LLM_FALLBACK_API_KEY")?.trim() ||
+    (fallbackProvider === "openrouter"
+      ? getOriginalEnvValue("OPENROUTER_API_KEY")?.trim() || null
+      : null);
+
+  if (fallbackStrategy.requiresApiKey && !fallbackApiKey) {
+    logger.warn(
+      "LLM fallback provider configured without an API key; skipping fallback target",
+      { fallbackProvider },
+    );
+    return targets;
+  }
+
+  targets.push({
+    label: "fallback",
+    provider: fallbackProvider,
+    baseUrl: fallbackBaseUrl,
+    apiKey: fallbackApiKey,
+    strategy: fallbackStrategy,
+    configuredModels: fallbackModels,
+    additionalModels: [],
+  });
+
+  return targets;
 }
 
 function normalizeModelForProvider(

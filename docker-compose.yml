@@ -52,41 +52,41 @@ services:
           target: /app/career-boards/workday/src
           action: sync+restart
         # Sync extractor changes
-        - path: ./extractors/gradcracker/src
-          target: /app/extractors/gradcracker/src
+        - path: ./scrapes/gradcracker/src
+          target: /app/scrapes/gradcracker/src
           action: sync+restart
-        - path: ./extractors/hiringcafe/src
-          target: /app/extractors/hiringcafe/src
+        - path: ./scrapes/hiringcafe/src
+          target: /app/scrapes/hiringcafe/src
           action: sync+restart
-        - path: ./extractors/ukvisajobs/src
-          target: /app/extractors/ukvisajobs/src
+        - path: ./scrapes/ukvisajobs/src
+          target: /app/scrapes/ukvisajobs/src
           action: sync+restart
-        - path: ./extractors/workingnomads/src
-          target: /app/extractors/workingnomads/src
+        - path: ./scrapes/workingnomads/src
+          target: /app/scrapes/workingnomads/src
           action: sync+restart
-        - path: ./extractors/golangjobs/src
-          target: /app/extractors/golangjobs/src
+        - path: ./scrapes/golangjobs/src
+          target: /app/scrapes/golangjobs/src
           action: sync+restart
-        - path: ./extractors/jobindex/src
-          target: /app/extractors/jobindex/src
+        - path: ./scrapes/jobindex/src
+          target: /app/scrapes/jobindex/src
           action: sync+restart
-        - path: ./extractors/seek/src
-          target: /app/extractors/seek/src
+        - path: ./scrapes/seek/src
+          target: /app/scrapes/seek/src
           action: sync+restart
-        - path: ./extractors/jobspy
-          target: /app/extractors/jobspy
+        - path: ./scrapes/jobspy
+          target: /app/scrapes/jobspy
           action: sync+restart
-        - path: ./extractors/naukri
-          target: /app/extractors/naukri
+        - path: ./scrapes/naukri
+          target: /app/scrapes/naukri
           action: sync+restart
-        - path: ./extractors/fiveamsat
-          target: /app/extractors/fiveamsat
+        - path: ./scrapes/fiveamsat
+          target: /app/scrapes/fiveamsat
           action: sync+restart
-        - path: ./extractors/wazzuf
-          target: /app/extractors/wazzuf
+        - path: ./scrapes/wazzuf
+          target: /app/scrapes/wazzuf
           action: sync+restart
-        - path: ./extractors/freehire/src
-          target: /app/extractors/freehire/src
+        - path: ./scrapes/freehire/src
+          target: /app/scrapes/freehire/src
           action: sync+restart
     restart: unless-stopped
     healthcheck:

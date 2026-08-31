@@ -12,12 +12,47 @@
  */
 
 import Lenis from "lenis";
+import type { ReactNode } from "react";
 import "lenis/dist/lenis.css";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 const DOCS_URL = "/docs/";
 const REPO_URL = "https://github.com/DaKheera47/job-ops";
+
+/**
+ * When the landing page is deployed on its own domain (e.g. Vercel), set
+ * `VITE_APP_URL` to the main app origin so CTAs open the real app instead of
+ * navigating inside the static landing bundle. Left unset (monolith build) it
+ * keeps using react-router `Link`.
+ */
+const APP_URL = (import.meta.env.VITE_APP_URL as string | undefined)?.replace(
+  /\/$/,
+  "",
+);
+
+function AppLink({
+  to,
+  className,
+  children,
+}: {
+  to: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  if (APP_URL) {
+    return (
+      <a href={`${APP_URL}${to}`} className={className}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={to} className={className}>
+      {children}
+    </Link>
+  );
+}
 
 const SHELL = "mx-auto w-full max-w-[1200px] px-6";
 const HAIRLINE = "border border-[#23252a]";
@@ -145,12 +180,12 @@ function Shot({ src, alt }: { src: string; alt: string }) {
 
 function PrimaryCta({ children }: { children: React.ReactNode }) {
   return (
-    <Link
+    <AppLink
       to="/sign-in?mode=signup"
       className="rounded-[6px] bg-[#e4f222] px-4 py-[10px] text-[14px] tracking-[-0.011em] text-[#08090a] transition-opacity hover:opacity-90 [font-weight:510]"
     >
       {children}
-    </Link>
+    </AppLink>
   );
 }
 
@@ -302,18 +337,18 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Link
+            <AppLink
               to="/sign-in"
               className="px-3 py-2 text-[13px] text-[#d0d6e0] hover:underline"
             >
               Sign in
-            </Link>
-            <Link
+            </AppLink>
+            <AppLink
               to="/sign-in?mode=signup"
               className="rounded-full bg-white px-4 py-2 text-[13px] text-[#08090a] [font-weight:510]"
             >
               Get started
-            </Link>
+            </AppLink>
           </div>
         </nav>
         {/* Scroll progress hairline */}
@@ -556,9 +591,9 @@ export const LandingPage: React.FC = () => {
                 <a href={REPO_URL} className="hover:text-[#d0d6e0]">
                   GitHub
                 </a>
-                <Link to="/sign-in" className="hover:text-[#d0d6e0]">
+                <AppLink to="/sign-in" className="hover:text-[#d0d6e0]">
                   Sign in
-                </Link>
+                </AppLink>
               </div>
             </div>
           </footer>

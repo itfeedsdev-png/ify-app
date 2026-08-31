@@ -161,13 +161,6 @@ export function AutomaticSourcePickerCard({
                   rowExit={sourceRowExit}
                   onSourceToggle={onSourceToggle}
                 />
-                <UnavailableSourceGroup
-                  rows={unavailableSourceRows}
-                  transition={sourceMotionTransition}
-                  rowInitial={sourceRowInitial}
-                  rowAnimate={sourceSectionAnimate}
-                  rowExit={sourceRowExit}
-                />
                 <WatchlistSourceGroup
                   sources={watchlistSources}
                   selectedSourceIds={selectedWatchlistSourceIds}
@@ -236,18 +229,10 @@ function WatchlistSourceGroup({
         <p className="text-xs text-muted-foreground">
           Loading Watchlist sources...
         </p>
-      ) : sources.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          No Watchlist sources saved yet. Add company career pages on the{" "}
-          <a
-            href="/watchlist"
-            className="font-medium text-foreground underline underline-offset-2 hover:text-primary"
-          >
-            Watchlist page
-          </a>{" "}
-          to include them in pipeline runs.
-        </p>
-      ) : (
+      ) : sources.length ===
+        0 ? // Watchlist is optional: hide the group entirely when the user has not
+      // saved any company career pages yet.
+      null : (
         <motion.div
           layout
           transition={transition}
@@ -377,78 +362,6 @@ function SourceGroup({
                     {sourceLabel[row.source]}
                   </span>
                 </span>
-              </Button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </motion.div>
-    </motion.div>
-  );
-}
-
-interface UnavailableSourceGroupProps {
-  rows: AutomaticSourcePickerRow[];
-  transition: Transition;
-  rowInitial: TargetAndTransition;
-  rowAnimate: TargetAndTransition;
-  rowExit: TargetAndTransition;
-}
-
-function UnavailableSourceGroup({
-  rows,
-  transition,
-  rowInitial,
-  rowAnimate,
-  rowExit,
-}: UnavailableSourceGroupProps) {
-  if (rows.length === 0) return null;
-
-  return (
-    <motion.div layout transition={transition} className="space-y-2">
-      <motion.p
-        layout
-        transition={transition}
-        className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground"
-      >
-        Currently unavailable
-      </motion.p>
-      <motion.div
-        layout
-        transition={transition}
-        className="grid gap-2 md:grid-cols-2"
-      >
-        <AnimatePresence initial={false} mode="popLayout">
-          {rows.map((row) => (
-            <motion.div
-              key={row.source}
-              layout
-              initial={rowInitial}
-              animate={rowAnimate}
-              exit={rowExit}
-              transition={transition}
-            >
-              <Button
-                type="button"
-                variant="ghost"
-                disabled
-                aria-label={sourceLabel[row.source]}
-                title={row.status.detail}
-                className="flex h-auto w-full items-start justify-between gap-3 rounded-xl border border-border/50 bg-transparent px-3 py-3 text-left text-foreground/80 disabled:pointer-events-none disabled:opacity-100"
-              >
-                <span className="min-w-0 space-y-1">
-                  <span className="block text-sm font-semibold">
-                    {sourceLabel[row.source]}
-                  </span>
-                  <span className="block text-xs leading-5 text-muted-foreground whitespace-pre-wrap">
-                    {row.status.detail}
-                  </span>
-                </span>
-                <Badge
-                  variant="outline"
-                  className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-[0.18em]"
-                >
-                  {row.status.badgeLabel}
-                </Badge>
               </Button>
             </motion.div>
           ))}

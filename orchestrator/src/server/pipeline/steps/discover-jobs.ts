@@ -1,9 +1,9 @@
 import { logger } from "@infra/logger";
 import { sanitizeUnknown } from "@infra/sanitize";
-import { getExtractorRegistry } from "@server/extractors/registry";
 import { getUserId } from "@server/infra/request-context";
 import { getAllJobUrls } from "@server/repositories/jobs";
 import * as settingsRepo from "@server/repositories/settings";
+import { getExtractorRegistry } from "@server/scrapes/registry";
 import { withHostedUsageReservation } from "@server/services/hosted-usage";
 import { resolveNearbyPlaceNames } from "@server/services/proximity-search";
 import { asyncPool } from "@server/utils/async-pool";

@@ -284,3 +284,124 @@ describe("LlmService provider normalization", () => {
     expect(String(requestedUrl)).toBe("https://router.requesty.ai/v1/models");
   });
 });
+
+describe("LlmService model fallback chain", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("falls back to the next model when the primary model fails", async () => {
+    vi.stubEnv("LLM_FALLBACK_MODELS", "mimo-v2.5");
+
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("rate limited", { status: 429 }))
+      .mockResolvedValueOnce(completionResponse('{"value":"ok"}'));
+
+    const llm = new LlmService({
+      provider: "openai_compatible",
+      baseUrl: "https://ai.sumopod.com/v1",
+      apiKey: "sk-sumo-test",
+    });
+
+    const result = await llm.callJson<{ value: string }>({
+      model: "qwen3.7-flash-2026-07-15",
+      messages: [{ role: "user", content: "hi" }],
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.value).toBe("ok");
+    }
+
+    const bodies = fetchSpy.mock.calls.map((call) =>
+      String(call[1]?.body ?? ""),
+    );
+    expect(bodies[0]).toContain("qwen3.7-flash-2026-07-15");
+    expect(bodies[1]).toContain("mimo-v2.5");
+  });
+
+  it("falls back to a secondary provider when the primary provider fails", async () => {
+    vi.stubEnv("LLM_FALLBACK_PROVIDER", "openrouter");
+    vi.stubEnv("LLM_FALLBACK_API_KEY", "sk-or-test");
+    vi.stubEnv(
+      "LLM_FALLBACK_PROVIDER_MODELS",
+      "thinkingmachines/inkling:free,thinkingmachines/inkling-small:free",
+    );
+
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response("primary down", { status: 503 }))
+      .mockResolvedValueOnce(completionResponse('{"value":"fallback-ok"}'));
+
+    const llm = new LlmService({
+      provider: "openai_compatible",
+      baseUrl: "https://ai.sumopod.com/v1",
+      apiKey: "sk-sumo-test",
+    });
+
+    const result = await llm.callJson<{ value: string }>({
+      model: "qwen3.7-flash-2026-07-15",
+      messages: [{ role: "user", content: "hi" }],
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.value).toBe("fallback-ok");
+    }
+
+    const urls = fetchSpy.mock.calls.map((call) => String(call[0]));
+    expect(urls[0]).toContain("ai.sumopod.com");
+    expect(urls[1]).toContain("openrouter.ai");
+    expect(String(fetchSpy.mock.calls[1]?.[1]?.body)).toContain(
+      "thinkingmachines/inkling:free",
+    );
+  });
+
+  it("returns the last error when every model and fallback provider fails", async () => {
+    vi.stubEnv("LLM_FALLBACK_MODELS", "mimo-v2.5");
+    vi.stubEnv("LLM_FALLBACK_PROVIDER", "openrouter");
+    vi.stubEnv("LLM_FALLBACK_API_KEY", "sk-or-test");
+    vi.stubEnv("LLM_FALLBACK_PROVIDER_MODELS", "thinkingmachines/inkling:free");
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("all down", { status: 503 }),
+    );
+
+    const llm = new LlmService({
+      provider: "openai_compatible",
+      baseUrl: "https://ai.sumopod.com/v1",
+      apiKey: "sk-sumo-test",
+    });
+
+    const result = await llm.callJson({
+      model: "qwen3.7-flash-2026-07-15",
+      messages: [{ role: "user", content: "hi" }],
+      jsonSchema: TEST_SCHEMA,
+    });
+
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error).toContain("503");
+    }
+  });
+
+  it("does not reuse the primary LLM_API_KEY for the fallback provider", () => {
+    vi.stubEnv("LLM_API_KEY", "sk-primary-sumopod");
+    vi.stubEnv("LLM_FALLBACK_PROVIDER", "openrouter");
+    vi.stubEnv("LLM_FALLBACK_PROVIDER_MODELS", "thinkingmachines/inkling:free");
+
+    // No LLM_FALLBACK_API_KEY and no OPENROUTER_API_KEY -> fallback target must
+    // be skipped rather than silently authenticating with the SumoPod key.
+    const llm = new LlmService({
+      provider: "openai_compatible",
+      baseUrl: "https://ai.sumopod.com/v1",
+    });
+
+    expect(llm.getProvider()).toBe("openai_compatible");
+    expect(llm.getBaseUrl()).toBe("https://ai.sumopod.com/v1");
+  });
+});

@@ -81,20 +81,20 @@ COPY orchestrator/package*.json ./orchestrator/
 COPY career-boards/bamboohr/package*.json ./career-boards/bamboohr/
 COPY career-boards/greenhouse/package*.json ./career-boards/greenhouse/
 COPY career-boards/workday/package*.json ./career-boards/workday/
-COPY extractors/adzuna/package*.json ./extractors/adzuna/
-COPY extractors/hiringcafe/package*.json ./extractors/hiringcafe/
-COPY extractors/gradcracker/package*.json ./extractors/gradcracker/
-COPY extractors/jobindex/package*.json ./extractors/jobindex/
-COPY extractors/naukri/package*.json ./extractors/naukri/
-COPY extractors/startupjobs/package*.json ./extractors/startupjobs/
-COPY extractors/workingnomads/package*.json ./extractors/workingnomads/
-COPY extractors/golangjobs/package*.json ./extractors/golangjobs/
-COPY extractors/ukvisajobs/package*.json ./extractors/ukvisajobs/
-COPY extractors/seek/package*.json ./extractors/seek/
-COPY extractors/fiveamsat/package*.json ./extractors/fiveamsat/
-COPY extractors/wazzuf/package*.json ./extractors/wazzuf/
-COPY extractors/freehire/package*.json ./extractors/freehire/
-COPY extractors/browser-utils/package*.json ./extractors/browser-utils/
+COPY scrapes/adzuna/package*.json ./scrapes/adzuna/
+COPY scrapes/hiringcafe/package*.json ./scrapes/hiringcafe/
+COPY scrapes/gradcracker/package*.json ./scrapes/gradcracker/
+COPY scrapes/jobindex/package*.json ./scrapes/jobindex/
+COPY scrapes/naukri/package*.json ./scrapes/naukri/
+COPY scrapes/startupjobs/package*.json ./scrapes/startupjobs/
+COPY scrapes/workingnomads/package*.json ./scrapes/workingnomads/
+COPY scrapes/golangjobs/package*.json ./scrapes/golangjobs/
+COPY scrapes/ukvisajobs/package*.json ./scrapes/ukvisajobs/
+COPY scrapes/seek/package*.json ./scrapes/seek/
+COPY scrapes/fiveamsat/package*.json ./scrapes/fiveamsat/
+COPY scrapes/wazzuf/package*.json ./scrapes/wazzuf/
+COPY scrapes/freehire/package*.json ./scrapes/freehire/
+COPY scrapes/browser-utils/package*.json ./scrapes/browser-utils/
 
 # Install build-time Node dependencies on the native builder platform. The
 # resulting client/docs assets are architecture-neutral static files.
@@ -109,21 +109,21 @@ COPY orchestrator ./orchestrator
 COPY career-boards/bamboohr ./career-boards/bamboohr
 COPY career-boards/greenhouse ./career-boards/greenhouse
 COPY career-boards/workday ./career-boards/workday
-COPY extractors/adzuna ./extractors/adzuna
-COPY extractors/hiringcafe ./extractors/hiringcafe
-COPY extractors/gradcracker ./extractors/gradcracker
-COPY extractors/jobindex ./extractors/jobindex
-COPY extractors/jobspy ./extractors/jobspy
-COPY extractors/naukri ./extractors/naukri
-COPY extractors/startupjobs ./extractors/startupjobs
-COPY extractors/workingnomads ./extractors/workingnomads
-COPY extractors/golangjobs ./extractors/golangjobs
-COPY extractors/ukvisajobs ./extractors/ukvisajobs
-COPY extractors/seek ./extractors/seek
-COPY extractors/fiveamsat ./extractors/fiveamsat
-COPY extractors/wazzuf ./extractors/wazzuf
-COPY extractors/freehire ./extractors/freehire
-COPY extractors/browser-utils ./extractors/browser-utils
+COPY scrapes/adzuna ./scrapes/adzuna
+COPY scrapes/hiringcafe ./scrapes/hiringcafe
+COPY scrapes/gradcracker ./scrapes/gradcracker
+COPY scrapes/jobindex ./scrapes/jobindex
+COPY scrapes/jobspy ./scrapes/jobspy
+COPY scrapes/naukri ./scrapes/naukri
+COPY scrapes/startupjobs ./scrapes/startupjobs
+COPY scrapes/workingnomads ./scrapes/workingnomads
+COPY scrapes/golangjobs ./scrapes/golangjobs
+COPY scrapes/ukvisajobs ./scrapes/ukvisajobs
+COPY scrapes/seek ./scrapes/seek
+COPY scrapes/fiveamsat ./scrapes/fiveamsat
+COPY scrapes/wazzuf ./scrapes/wazzuf
+COPY scrapes/freehire ./scrapes/freehire
+COPY scrapes/browser-utils ./scrapes/browser-utils
 
 # ============================================================================
 # PARALLEL BUILD STAGES
@@ -158,20 +158,20 @@ COPY orchestrator/package*.json ./orchestrator/
 COPY career-boards/bamboohr/package*.json ./career-boards/bamboohr/
 COPY career-boards/greenhouse/package*.json ./career-boards/greenhouse/
 COPY career-boards/workday/package*.json ./career-boards/workday/
-COPY extractors/adzuna/package*.json ./extractors/adzuna/
-COPY extractors/hiringcafe/package*.json ./extractors/hiringcafe/
-COPY extractors/gradcracker/package*.json ./extractors/gradcracker/
-COPY extractors/jobindex/package*.json ./extractors/jobindex/
-COPY extractors/naukri/package*.json ./extractors/naukri/
-COPY extractors/startupjobs/package*.json ./extractors/startupjobs/
-COPY extractors/workingnomads/package*.json ./extractors/workingnomads/
-COPY extractors/golangjobs/package*.json ./extractors/golangjobs/
-COPY extractors/ukvisajobs/package*.json ./extractors/ukvisajobs/
-COPY extractors/seek/package*.json ./extractors/seek/
-COPY extractors/fiveamsat/package*.json ./extractors/fiveamsat/
-COPY extractors/wazzuf/package*.json ./extractors/wazzuf/
-COPY extractors/freehire/package*.json ./extractors/freehire/
-COPY extractors/browser-utils/package*.json ./extractors/browser-utils/
+COPY scrapes/adzuna/package*.json ./scrapes/adzuna/
+COPY scrapes/hiringcafe/package*.json ./scrapes/hiringcafe/
+COPY scrapes/gradcracker/package*.json ./scrapes/gradcracker/
+COPY scrapes/jobindex/package*.json ./scrapes/jobindex/
+COPY scrapes/naukri/package*.json ./scrapes/naukri/
+COPY scrapes/startupjobs/package*.json ./scrapes/startupjobs/
+COPY scrapes/workingnomads/package*.json ./scrapes/workingnomads/
+COPY scrapes/golangjobs/package*.json ./scrapes/golangjobs/
+COPY scrapes/ukvisajobs/package*.json ./scrapes/ukvisajobs/
+COPY scrapes/seek/package*.json ./scrapes/seek/
+COPY scrapes/fiveamsat/package*.json ./scrapes/fiveamsat/
+COPY scrapes/wazzuf/package*.json ./scrapes/wazzuf/
+COPY scrapes/freehire/package*.json ./scrapes/freehire/
+COPY scrapes/browser-utils/package*.json ./scrapes/browser-utils/
 
 # Install production Node dependencies only.
 RUN npm install --workspaces --include-workspace-root --omit=dev \
@@ -250,21 +250,21 @@ COPY orchestrator ./orchestrator
 COPY career-boards/bamboohr ./career-boards/bamboohr
 COPY career-boards/greenhouse ./career-boards/greenhouse
 COPY career-boards/workday ./career-boards/workday
-COPY extractors/adzuna ./extractors/adzuna
-COPY extractors/hiringcafe ./extractors/hiringcafe
-COPY extractors/gradcracker ./extractors/gradcracker
-COPY extractors/jobindex ./extractors/jobindex
-COPY extractors/jobspy ./extractors/jobspy
-COPY extractors/naukri ./extractors/naukri
-COPY extractors/startupjobs ./extractors/startupjobs
-COPY extractors/workingnomads ./extractors/workingnomads
-COPY extractors/golangjobs ./extractors/golangjobs
-COPY extractors/ukvisajobs ./extractors/ukvisajobs
-COPY extractors/seek ./extractors/seek
-COPY extractors/fiveamsat ./extractors/fiveamsat
-COPY extractors/wazzuf ./extractors/wazzuf
-COPY extractors/freehire ./extractors/freehire
-COPY extractors/browser-utils ./extractors/browser-utils
+COPY scrapes/adzuna ./scrapes/adzuna
+COPY scrapes/hiringcafe ./scrapes/hiringcafe
+COPY scrapes/gradcracker ./scrapes/gradcracker
+COPY scrapes/jobindex ./scrapes/jobindex
+COPY scrapes/jobspy ./scrapes/jobspy
+COPY scrapes/naukri ./scrapes/naukri
+COPY scrapes/startupjobs ./scrapes/startupjobs
+COPY scrapes/workingnomads ./scrapes/workingnomads
+COPY scrapes/golangjobs ./scrapes/golangjobs
+COPY scrapes/ukvisajobs ./scrapes/ukvisajobs
+COPY scrapes/seek ./scrapes/seek
+COPY scrapes/fiveamsat ./scrapes/fiveamsat
+COPY scrapes/wazzuf ./scrapes/wazzuf
+COPY scrapes/freehire ./scrapes/freehire
+COPY scrapes/browser-utils ./scrapes/browser-utils
 
 # Create runtime directories.
 RUN mkdir -p /app/data/pdfs /app/data/cloudflare-cookies /app/codex-home

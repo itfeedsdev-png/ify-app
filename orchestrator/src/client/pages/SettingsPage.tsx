@@ -842,9 +842,20 @@ export const SettingsPage: React.FC = () => {
     queryKey: queryKeys.app.status(),
     queryFn: api.getAppStatus,
   });
+  // Admin-only surfaces: only fetch when the current user is a system admin,
+  // otherwise the backups endpoint returns 403 and surfaces a confusing error.
+  const currentAuthUserQueryKey = ["auth", "me"] as const;
+  const meQuery = useQuery({
+    queryKey: currentAuthUserQueryKey,
+    queryFn: api.getCurrentAuthUser,
+    retry: false,
+  });
+  const isSystemAdmin = meQuery.data?.isSystemAdmin === true;
+
   const backupsQuery = useQuery({
     queryKey: queryKeys.backups.list(),
     queryFn: api.getBackups,
+    enabled: isSystemAdmin,
   });
   const updateSettingsMutation = useUpdateSettingsMutation();
   const isLoading = settingsQuery.isLoading;

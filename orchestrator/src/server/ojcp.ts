@@ -17,7 +17,7 @@ import type { CreateJobInput } from "@shared/types";
 import { stripHtmlTags } from "@shared/utils/string";
 import type { Request, RequestHandler, Response } from "express";
 import { z } from "zod";
-import { fetchFreeHirePage } from "../../../extractors/freehire/src/run.js";
+import { fetchFreeHirePage } from "../../../scrapes/freehire/src/run.js";
 
 const OJCP_VERSION = "0.1";
 const OJCP_ERROR_CODE = -32000;

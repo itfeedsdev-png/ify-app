@@ -1,5 +1,5 @@
 import { logger } from "@infra/logger";
-import { getExtractorRegistry } from "@server/extractors/registry";
+import { getExtractorRegistry } from "@server/scrapes/registry";
 import type { ExtractorSourceId } from "@shared/extractors";
 import type {
   ExtractorHealthResponse,
