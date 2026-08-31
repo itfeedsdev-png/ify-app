@@ -35,3 +35,7 @@ orchestrator/storage
 
 # opencode tool config
 .opencode/
+
+# AI tool configs
+.claude/
+.codex/
