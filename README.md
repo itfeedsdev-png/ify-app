@@ -363,8 +363,6 @@ vercel deploy
 
 ## Future Roadmap
 
-- [ ] **Auto-Apply** — Automatically fill and submit job applications
-- [ ] **Analytics Dashboard** — Track application response rates and optimize strategy
 - [ ] **Mobile App** — React Native companion for on-the-go job search
 - [ ] **More Platforms** — Twitter/X, TikTok, Discord integration
 - [ ] **Team Features** — Collaborative job search for career services
@@ -374,19 +372,8 @@ vercel deploy
 
 ## Team
 
-**Muhammad Maulana Firdaussyah** — Fullstack Developer
-
-- GitHub: [@maulana-tech](https://github.com/maulana-tech)
-- LinkedIn: [Muhammad Maulana Firdaussyah](https://linkedin.com/in/maulana-tech)
+IFY TEAM
 
 ---
 
-## License
-
-MIT
-
----
-
-<p align="center">
-  Built with ❤️ for job seekers everywhere
-</p>
+#
