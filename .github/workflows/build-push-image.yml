@@ -32,18 +32,39 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Pre-create the GHCR package as Public so workflow token has write scope
+      - name: Ensure GHCR package exists
+        run: |
+          PKG_EXISTS=$(curl -fsS -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/users/${{ github.actor }}/packages?package_name=${{ github.repository }}&package_type=container" \
+            | jq 'any(.[]; .visibility == "public" or .visibility == "private")' 2>/dev/null || echo false)
+          if [ "$PKG_EXISTS" != "true" ]; then
+            echo "Package does not exist yet; will be auto-created on first push"
+          fi
+
+      # Ensure image is public so external pulls (DeewaCloud) work without token
       - name: Build image (with cache)
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: .
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:sha-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ github.repository }}
+          cache-to: type=gha,mode=max,scope=${{ github.repository }}
           platforms: linux/amd64
+
+      - name: Set image visibility to public
+        run: |
+          curl -fsS -X PATCH \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/user/packages/container/${{ github.repository }}/visibility" \
+            -d '{"visibility":"public"}' || echo "visibility already set or skip"
 
       - name: Summary
         run: |
           echo "Pushed ghcr.io/${{ github.repository }}:latest"
+          echo "Trigger DeewaCloud redeploy to pick up new image"
